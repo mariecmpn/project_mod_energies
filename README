@@ -1,2 +1,18 @@
 PROJECT: reconstruction of time-dependent coefficients from heat moments
 
+Résolution d'un problème inverse liant la température et des coefficients dépendants en temps par décomposition en ondelettes de Haar.
+Bibliographie: Reconstruction of time-dependent coefficients from heat moments,  M.J. Huntul, D. Lesnic et M.S. Hussein, 2016. http://dx.doi.org/10.1016/j.amc.2016.12.028.
+
+Authors: Lucas FOURNY et Marie COMPAIN
+
+Contenu du dossier:
+- init.dat: fichier qui permet l'initialisation de variables
+- src/main.f90: code Fortran du programme principal
+- src/numerics.f90: module Fortran qui permet de déclarer les constantes utiles à tout le programme (double précision...)
+- src/ondelettes.f90: module Fortran pour les fonctions et routines utiles à la définition des ondelettes de Haar
+- src/leastsquares.f90: module Fortran pour les fonctions et routines utiles à la méthode des moindres carrés présentés dans le papier
+- src/Makefile: Makefile du projet
+
+Compilation:
+Il faut aller dans le dossier src, puis faire make. Les fichiers binaires seront stockés dans le dossier bin, et le fichier exécutable dans le dossier parent de src. Les variables du problème sont à définir dans init.dat.
+

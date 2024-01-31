@@ -3,8 +3,8 @@ module ondelettes
     implicit none
     contains
 
-    real(rp) function h1(x) !fonction ondelette h_1
-    !retourne 1 entre 0 et 1, 0 sinons
+    real(rp) function h1(x) ! fonction ondelette h_1
+    ! retourne 1 entre 0 et 1, 0 sinon
         real(rp) :: x
         real(rp) :: y
         if (0 <= x .and. x < 1) then
@@ -15,16 +15,16 @@ module ondelettes
         h1 = y
     end function h1
 
-    real(rp) function h2(x) !fonction ondelette h_2
-    !retourne 1 entre 0 et 0.5, -1 entre 0.5 et 1, 0 sinon
+    real(rp) function h2(x) ! fonction ondelette h_2
+    ! retourne 1 entre 0 et 0.5, -1 entre 0.5 et 1, 0 sinon
         real(rp) :: x
         real(rp) :: y
         if (x>=0 .and. x<0.5) then
-        y = 1
-        elseif (x>=0.5 .and. x<1) then 
-            y = -1
+        y = 1._rp
+        else if (x>=0.5 .and. x<1) then 
+            y = -1._rp
         else
-            y = 0
+            y = 0._rp
         end if
         h2 = y
     end function h2
@@ -37,7 +37,7 @@ module ondelettes
 
         if (l == 1) then
             y = h1(x)
-        elseif (l == 2) then
+        else if (l == 2) then
             y = h2(x)
         else
             j = 1 ! on commence avec j = 1
