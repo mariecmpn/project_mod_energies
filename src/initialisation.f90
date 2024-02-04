@@ -20,15 +20,4 @@ module initialisation
         close(my_unit)
     end subroutine read_file
 
-    integer function facto(n)
-        ! fonction qui calcule n factoriel
-        integer :: n, p
-        facto = 1
-        if (n > 0) then
-            do p = 1,n
-                facto = facto*p
-            end do
-        end if
-    end function facto
-
 end module initialisation
