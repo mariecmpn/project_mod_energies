@@ -1,8 +1,8 @@
 module ondelettes
     use numerics
+    use initialisation
     implicit none
     contains
-
 
     integer function facto(n)
         ! fonction qui calcule n factoriel
@@ -58,7 +58,7 @@ module ondelettes
             do while (not_found .AND. l < 10000) ! on limite a l < 10000
                 if (l > M1 .AND. l<= M2) then ! si on est dans le bon intervalle
                     k = l-M1-1 ! car l = m+k+1
-                    y = h2(x*2**j-k)
+                    y = h2(x*2**j-k) ! on utilise l'expression de h_2
                     not_found = .FALSE. ! on a trouve le bon intervalle et on a calcule l'ondelette donc on peut sortir de la boucle
                 else ! si on n'est pas dans le bon intervalle pour m on change de j
                     j = j+1
@@ -101,5 +101,23 @@ module ondelettes
             end if
         end do
     end function P
+
+    subroutine G(GU, U, L, M, X)
+        ! subroutine pour calculer 
+        real(rp), intent(in) :: L
+        integer, intent(in) :: M
+        real(rp), dimension(4*M**2+4*M), intent(in) :: U, X
+        real(rp), dimension(4*M**2+4*M, 4*M**2+4*M), intent(out) :: GU
+
+    end subroutine G
+
+    subroutine jac()
+        ! routine pour calculer la jacobienne par rapport a u de G
+
+    end subroutine jac
+
+    subroutine newton()
+
+    end subroutine newton
 
 end module ondelettes

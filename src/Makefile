@@ -1,4 +1,4 @@
-# Makefile Projet fluides incompressibles
+# Makefile Projet Modelisation pour les energies
 
 # Compiler used
 CC = gfortran-11
