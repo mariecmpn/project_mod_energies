@@ -75,11 +75,13 @@ module ondelettes
         real(rp) :: x
         integer :: k, j, m
         integer :: M1,M2
+        integer :: fbeta
         logical :: not_found = .TRUE.
 
         j = 0
         M1 = 0
         M2 = 1
+        fbeta=facto(beta)
         do while (not_found .AND. i < 10000) ! on limite a i < 10000
             if (i > M1 .AND. i<= M2) then ! si on est dans le bon intervalle
                 m = M1
@@ -87,11 +89,11 @@ module ondelettes
                 if (x < real(k)/m) then
                     P = 0._rp
                 else if ((x >= real(k)/m) .AND. (x<(real(k)+0.5)/m)) then
-                    P = (1._rp/facto(beta))*(x - real(k)/m)**beta
+                    P = (1._rp/fbeta)*(x - real(k)/m)**beta
                 else if ((x>=(real(k)+0.5)/m) .AND. (x<(real(k)+1.)/m)) then
-                    P = (1._rp/facto(beta))*((x - real(k)/m)**beta - 2._rp*(x - (real(k)+0.5_rp)/m)**beta)
+                    P = (1._rp/fbeta)*((x - real(k)/m)**beta - 2._rp*(x - (real(k)+0.5_rp)/m)**beta)
                 else
-                    P = (1._rp/facto(beta))*((x-real(k)/m)**beta-2._rp*(x-(real(k)+0.5_rp)/m)**beta+(x-(real(k)+1._rp)/m)**beta)
+                    P = (1._rp/fbeta)*((x-real(k)/m)**beta-2._rp*(x-(real(k)+0.5_rp)/m)**beta+(x-(real(k)+1._rp)/m)**beta)
                 end if
                 not_found = .FALSE. ! on a trouve le bon intervalle et on a calcule l'ondelette donc on peut sortir de la boucle
             else ! si on n'est pas dans le bon intervalle pour m on change de j
