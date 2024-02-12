@@ -18,6 +18,7 @@ module initialisation
         read(my_unit,*) M
 
         write(6,*) 'M = ', M, ' donc nombre de termes dans les sommes: ', 2*M
+        write(6,*) 'Nombre de points de maillage: 4M^2+4M = ', 4*M**2+4*M
         write(6,*) 'Dimensions du domaine (0,L)x(0,T): L = ', L, ' T = ', T
 
         close(my_unit)
@@ -29,10 +30,6 @@ module initialisation
         real(rp), dimension(2*M+2), intent(out) :: X
         real(rp), dimension(2*M), intent(out) :: Tps
         integer :: i
-        real(rp) :: y, s
-
-        y = 0._rp
-        s = 0._rp
 
         do i =1,2*M
             X(i) = real(i-1)*L/real(2*M+1)
@@ -42,6 +39,27 @@ module initialisation
         X(2*M+1) = real(2*M)*L/real(2*M+1)
         X(2*M+2) = L
     end subroutine discretisation
+
+    subroutine save(file_name, U, X, Tps, M)
+        character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
+        integer, intent(in) :: M
+        real(rp), dimension(4*M**2+4*M) :: U
+        real(rp), dimension(2*M+2), intent(in) :: X
+        real(rp), dimension(2*M), intent(in) :: Tps
+        integer :: my_unit ! unite logique du fichier a ouvrir
+        integer :: r,s,k
+
+        open(newunit = my_unit, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
+
+        do r=1,2*M+2
+            do s=1,2*M
+                k = 2*M*(s-1)+r
+                write(my_unit,*) X(r), Tps(s), U(k)
+            end do
+        end do
+
+        close(my_unit)
+    end subroutine save
 
     !--------------------------------
     ! FONCTIONS CONDITIONS INITIALES

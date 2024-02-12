@@ -120,22 +120,23 @@ module ondelettes
         do r = 1,2*M+2
             do s = 1,2*M
                 k = 2*M*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
+                write(6,*) k
                 do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
                     Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
                     Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
                 end do
                 ! contributions sans U
-                GU(k) = (1._rp-2._rp/L)*dt_mu_1(Tps(s))+2*X(r)/(L**2)*dt_H_0(Tps(s))-f(X(r),Tps(s))
+                GU(k) = (1._rp-2._rp/L)*dt_mu_1(Tps(s))+(2./(L**2))*X(r)*dt_H_0(Tps(s))-f(X(r),Tps(s))
                 ! contributions avec seulement a
                 GU(k) = GU(k)-dxx_phi(X(r))*Sa
                 ! contributions avec seulement b
-                GU(k) = GU(k)+Sb*(2./L*(mu_1(Tps(s))-phi(0._rp))+(2./L**2)*(int_phi(L)-H_0(Tps(s)))-dx_phi(X(r)))
+                GU(k) = GU(k)+Sb*((2./L)*(mu_1(Tps(s))-phi(0._rp))+(2./L**2)*(int_phi(L)-H_0(Tps(s)))-dx_phi(X(r)))
                 ! contributions des u
                 do i = 1,2*M
                     do j = 1,2*M
                         n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
-                        GU(k) = GU(k)+U(n)*((P(2,i,X(r))-2.*X(r)/L**2*P(3,i,L))*hl(X(r),j) &
-                         - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-2./L**2)*P(3,i,L)*P(1,i,Tps(s))*Sb)
+                        GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P(3,i,L))*hl(X(r),j) &
+                         - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,i,Tps(s))*Sb)
                     end do
                 end do
             end do
@@ -148,6 +149,8 @@ module ondelettes
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M), intent(out) :: J
+
+
     end subroutine jac
 
     subroutine newton(U, M, eps)
