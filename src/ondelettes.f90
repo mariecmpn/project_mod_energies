@@ -163,4 +163,39 @@ module ondelettes
 
     end subroutine newton
 
+
+    subroutine reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
+        ! routine pour la reconstruction des solutions 
+        integer, intent(in) :: M ! entier M pour les sommes en ondelettes
+        real(rp), dimension(4*M**2+4*M), intent(in) :: U ! vecteur des coef u_ij, a_i et b_i qu'on a determine avant
+        real(rp), dimension(2*M+2), intent(in) :: X ! vecteur du maillage en espace
+        real(rp), dimension(2*M), intent(in) :: Tps ! vecteur du maillage en temps
+        real(rp), dimension(4*M**2+4*M), intent(out) :: Uapp ! vecteur de la solution approchee u_app de la fonction u
+        real(rp), dimension(2*M), intent(out) :: Aapp, Bapp ! vecteur des solutions approchees a_app et b_app des fonctions a et b
+        integer :: r,s,k,i,j ! entiers pour les boucles
+
+        Uapp(:) = 0._rp
+        Aapp(:) = 0._rp
+        Bapp(:) = 0._rp
+        do s = 1,2*M ! boucle sur le maillage en temps
+            ! Pour la solution approchee de U
+            do r = 1,2*M+2 ! boucle sur le maillage en espace
+                do i = 1,2*M ! boucles sur les indices de u_ij
+                    do j = 1,2*M
+                        k = 2*M*(j-1)+i
+                        Uapp(k) = Uapp(k) + U(k)*hl(X(r),i)*hl(Tps(s),j) ! decomposition en ondelettes de Haar de u
+                    end do
+                end do
+            end do
+
+            ! Pour la solution approchee de A et de B
+            do i = 1,2*M ! boucle sur l'indice de a_i et b_i
+                Aapp(i) = Aapp(i) + U(4*M**2+i)*hl(Tps(s), i)
+                Bapp(i) = Bapp(i)+ U(4*M**2+2*M+i)*hl(Tps(s), i)
+            end do
+        end do
+
+
+    end subroutine reconstruction_sol
+
 end module ondelettes
