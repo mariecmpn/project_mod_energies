@@ -208,11 +208,14 @@ module ondelettes
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
-        real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
+        !real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
+        real(rp), dimension(2), intent(out) :: U
         real(rp), dimension(2*M+2), intent(in) :: X
         real(rp), dimension(2*M), intent(in) :: Tps
-        real(rp), dimension(4*M**2+4*M) :: GU
-        real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
+        !real(rp), dimension(4*M**2+4*M) :: GU
+        real(rp), dimension(2) :: GU
+        !real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
+        real(rp), dimension(2,2) :: J
         integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
         integer :: info, i, jj
         real(rp) :: conv
@@ -225,27 +228,50 @@ module ondelettes
 
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
-            call G(GU, U, L, M, X, Tps) ! on calcule G(U)
-            write(6,*) (GU(i), i =1,4*M**2+4*M)
-            write(6,*)
-            call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
-            do i = 1,4*M**2+4*M
-                write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
-            end do
+            !call G(GU, U, L, M, X, Tps) ! on calcule G(U)
+            call G_test(GU,U)
+            !write(6,*) (GU(i), i =1,4*M**2+4*M)
+            !write(6,*)
+            !call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
+            call Jac_test(J,U)
+            !do i = 1,4*M**2+4*M
+            !    write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
+            !end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
             ! on inverse le systeme
-            call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
+            !call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
+            call DGESV(2,1,J,2,ipiv,GU,2,info)
             if (info /= 0) then
                 write(6,*) 'Probleme pour l inversion de systeme'
-                write(6,*) info
+                if (info < 0) write(6,*) 'le coefficient d indice ', info, ' a une valeur illegale'
+                if (info > 0) write(6,*) 'le coefficient U(',info,',',info,') de la factorisation est egal a 0'
                 stop
             end if
             U(:) = GU(:) + U(:) ! on calcule U_k+1
-            conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
+            !conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
+            conv = norme_L2(GU,2)/norme_L2(U,2)
             nb_iter = nb_iter+1
         end do
         write(6,*) 'Nb d iterations pour Newton : ', nb_iter
     end subroutine newton
+
+    subroutine G_test(GU,U)
+        real(rp), dimension(2), intent(out) :: GU
+        real(rp), dimension(2), intent(in) :: U
+        GU(1) = U(1)**2+U(2)**2
+        GU(2) = U(1)**4+U(2)**4
+    end subroutine G_test
+
+    subroutine Jac_test(J,U)
+        real(rp), dimension(2,2), intent(out) :: J
+        real(rp), dimension(2), intent(in) :: U
+        J(1,1) = 2*U(1)
+        J(1,2) = 2*U(2)
+        J(2,1) = 4*U(1)**3
+        J(2,2) = 4*U(2)**3
+    end subroutine Jac_test
+
+
 
     real(rp) function norme_L2(U, Ns)
         integer :: Ns
