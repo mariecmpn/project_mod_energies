@@ -21,13 +21,11 @@ module ondelettes
     real(rp) function h1(x) ! fonction ondelette h_1
     ! retourne 1 entre 0 et 1, 0 sinon
         real(rp) :: x
-        real(rp) :: y
-        if (0 <= x .and. x < 1) then
-            y = 1
+        if (x>=0. .and. x < 1.) then
+            h1 = 1._rp
         else
-            y = 0
+            h1 = 0._rp
         end if
-        h1 = y
     end function h1
 
     real(rp) function h2(x) ! fonction ondelette h_2
@@ -45,23 +43,32 @@ module ondelettes
     end function h2
 
     real(rp) function hl(x,l) ! fonction ondelette h_l pour tout l (y compris 1 et 2)
-        real(rp) :: x,y
+        real(rp) :: x
         integer :: l, k, j
         integer :: M1,M2
         logical :: not_found = .TRUE.
 
         if (l == 1) then
-            y = h1(x)
+            hl = h1(x)
         else if (l == 2) then
-            y = h2(x)
+            hl = h2(x)
         else
+            not_found = .TRUE.
             j = 1 ! on commence avec j = 1
             M1 = 2**j
             M2 = 2**(j+1)
             do while (not_found .AND. l < 10000) ! on limite a l < 10000
                 if (l > M1 .AND. l<= M2) then ! si on est dans le bon intervalle
                     k = l-M1-1 ! car l = m+k+1
-                    y = h2(x*2**j-k) ! on utilise l'expression de h_2
+                    hl = h2(x*2**j-k) ! on utilise l'expression de h_2
+                    !if ((x >= real(k)/real(M1)) .AND. (x < real(k+0.5)/real(M1))) then
+                    !    write(6,*) real(k)/real(M1), real(k+0.5)/real(M1)
+                    !    hl = 1._rp
+                    !else if ((x >= real(k+0.5)/real(M1)) .AND. (x < real(k+1)/real(M1))) then
+                    !    hl = -1._rp
+                    !else
+                    !   hl = 0._rp
+                    !end if
                     not_found = .FALSE. ! on a trouve le bon intervalle et on a calcule l'ondelette donc on peut sortir de la boucle
                 else ! si on n'est pas dans le bon intervalle pour m on change de j
                     j = j+1
@@ -70,7 +77,6 @@ module ondelettes
                 end if
             end do
         end if
-        hl = y
     end function hl
 
     real(rp) function P(beta, i, x)
