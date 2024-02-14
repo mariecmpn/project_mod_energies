@@ -29,7 +29,7 @@ program inverse_pb
     Aapp(:) = 0._rp
     do s = 1,2*M
         !write(6,*) Tps(s)
-        Aapp(s) = hl(Tps(s),6)
+        Aapp(s) = P(2,6,Tps(s))
     end do
 
     ! on utilise newton pour trouver le zero de la fonction G(U)

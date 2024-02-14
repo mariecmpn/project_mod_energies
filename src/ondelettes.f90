@@ -89,6 +89,7 @@ module ondelettes
         j = 0
         M1 = 0
         M2 = 1
+        not_found = .TRUE.
         do while (not_found .AND. i < 10000) ! on limite a i < 10000
             if (i > M1 .AND. i<= M2) then ! si on est dans le bon intervalle
                 m = M1
