@@ -13,28 +13,32 @@ program inverse_pb
     real(rp) :: L,T ! dimensions du domaine
     real(rp), dimension(:), allocatable :: X, Tps ! discretisation du domaine
     real(rp), dimension(:), allocatable :: U ! vecteur des inconnus
-    real(rp), dimension(:), allocatable :: GU
+    real(rp), dimension(:), allocatable :: Aapp, Bapp, Uapp
+    real(rp) :: eps = 1.D-6
     integer :: r,s,k
 
-
+    ! lecture des donnees
     call read_file('init.dat', L, T, M)
 
-    allocate(U(4*M**2+4*M), X(2*M+2), Tps(2*M), GU(4*M**2+4*M))
+    ! on alloue dynamiquement les tableaux
+    allocate(U(4*M**2+4*M), X(2*M+2), Tps(2*M), Uapp(4*M**2+4*M), Aapp(2*M), Bapp(2*M))
 
+    ! on discretise l'espace
     call discretisation(X, Tps, M, L, T)
 
-    do r = 1,2*M+2
-        do s = 1,2*M
-            k = 2*M*(s-1)+r
-            U(k) = u_ex(X(r),Tps(s))
-        end do
-    end do
+    ! on utilise newton pour trouver le zero de la fonction G(U)
+    call newton(U, M, eps, X, Tps, L)
 
-    call G(GU, U, L, T, M, X, Tps)
+    ! on reconstruit les solution a partir des coefficients determines ci-dessus
+    call reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
 
-    call save('solution_ex.dat', GU, X, Tps, M)
+    ! on enregistre les resultats
+    call save_u('solution_u.dat', Uapp, X, Tps, M)
+    call save_a_or_b('solution_a.dat', Aapp, Tps, M)
+    call save_a_or_b('solution_a.dat', Bapp, Tps, M)
+    
 
 
-    deallocate(U, X, Tps, GU)
+    deallocate(U, X, Tps, Uapp, Aapp, Bapp)
 
 end program inverse_pb

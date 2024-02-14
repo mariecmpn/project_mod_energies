@@ -40,7 +40,7 @@ module initialisation
         X(2*M+2) = L
     end subroutine discretisation
 
-    subroutine save(file_name, U, X, Tps, M)
+    subroutine save_u(file_name, U, X, Tps, M)
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M) :: U
@@ -59,7 +59,24 @@ module initialisation
         end do
 
         close(my_unit)
-    end subroutine save
+    end subroutine save_u
+
+    subroutine save_a_or_b(file_name, A, Tps, M)
+        character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
+        integer, intent(in) :: M
+        real(rp), dimension(4*M**2+4*M) :: A
+        real(rp), dimension(2*M), intent(in) :: Tps
+        integer :: my_unit ! unite logique du fichier a ouvrir
+        integer :: l
+
+        open(newunit = my_unit, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
+
+        do l = 1,2*M
+            write(my_unit,*) Tps(l), A(l)
+        end do
+
+        close(my_unit)
+    end subroutine save_a_or_b
 
     !--------------------------------
     ! FONCTIONS CONDITIONS INITIALES

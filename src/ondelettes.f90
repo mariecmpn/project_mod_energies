@@ -1,9 +1,10 @@
 module ondelettes
     use numerics
     use initialisation
+    implicit none
 
     external :: DGESV ! routine pour l'inversion de systeme
-    implicit none
+
     contains
 
     integer function facto(n)
@@ -122,7 +123,7 @@ module ondelettes
         do r = 1,2*M+2
             do s = 1,2*M
                 k = 2*M*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
-                write(6,*) k
+                !write(6,*) k
                 Sa = 0._rp
                 Sb = 0._rp
                 do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
@@ -174,7 +175,7 @@ module ondelettes
                 do i = 1,2*M ! boucles sur les colonnes => sur les U_j
                     do jj = 1,2*M
                         n = 2*M*(i-1)+jj
-                        J(k,ll) = (P(2,i,X(r))-2.*X(r)/L**2*P(3,i,L))*hl(Tps(s),jj) &
+                        J(k,ll) = (P(2,i,X(r))-(2.*X(r)/L**2)*P(3,i,L))*hl(Tps(s),jj) &
                         & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-2./L**2*P(3,i,L))*P(1,jj,Tps(s))*Sb
 
                         ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
@@ -186,7 +187,7 @@ module ondelettes
                 do ll = 1,2*M
                     la = 4*M**2+ll
                     lb = 4*M**2+2*M+ll
-                    J(k,la) = hl(X(r),la)*(Sua + dxx_phi(X(r)))
+                    J(k,la) = hl(X(r),la)*(Sua - dxx_phi(X(r)))
                     J(k,lb) = hl(X(r),lb)*(Sub - 2./L**2*H_0(Tps(s)) + 2./L*(mu_1(Tps(s)) - phi(0._rp)) &
                     & + 2./L**2*int_phi(L)- dx_phi(X(r)))
                 end do
@@ -200,30 +201,36 @@ module ondelettes
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
-        real(rp), dimension(4*M**2+4*M), intent(inout) :: U ! en entree: U_0, en sortie: U_k la racine de G(U) = 0
+        real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
         real(rp), dimension(2*M+2), intent(in) :: X
         real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(4*M**2+4*M) :: GU
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
         integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
-        integer :: info
+        integer :: info, i, jj
         real(rp) :: conv
         integer :: itermax = 1000, nb_iter
 
         ! initialisation
-        U(:) = 1._rp
+        U(:) = 0.5_rp
         conv = 1._rp
         nb_iter = 0
 
         ! iterations
-        do while (conv > eps .AND. nb_iter < itermax)
+        do while ((conv > eps) .AND. (nb_iter < itermax))
             call G(GU, U, L, M, X, Tps) ! on calcule G(U)
+            write(6,*) (GU(i), i =1,4*M**2+4*M)
+            write(6,*)
             call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
+            do i = 1,4*M**2+4*M
+                write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
+            end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
             ! on inverse le systeme
-            call DGESV(4*M**2+4*M,4*M**2+4*M,J,4*M**2+4*M,ipiv,GU,1,info) ! le resultat est enregistre dans GU
+            call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
             if (info /= 0) then
                 write(6,*) 'Probleme pour l inversion de systeme'
+                write(6,*) info
                 stop
             end if
             U(:) = GU(:) + U(:) ! on calcule U_k+1
