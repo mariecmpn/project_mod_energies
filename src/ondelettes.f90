@@ -1,6 +1,8 @@
 module ondelettes
     use numerics
     use initialisation
+
+    external :: DGESV ! routine pour l'inversion de systeme
     implicit none
     contains
 
@@ -102,9 +104,9 @@ module ondelettes
         end do
     end function P
 
-    subroutine G(GU, U, L, T, M, X, Tps)
+    subroutine G(GU, U, L, M, X, Tps)
         ! subroutine pour calculer 
-        real(rp), intent(in) :: L, T
+        real(rp), intent(in) :: L
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
         real(rp), dimension(2*M+2), intent(in) :: X
@@ -121,6 +123,8 @@ module ondelettes
             do s = 1,2*M
                 k = 2*M*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
                 write(6,*) k
+                Sa = 0._rp
+                Sb = 0._rp
                 do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
                     Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
                     Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
@@ -136,7 +140,7 @@ module ondelettes
                     do j = 1,2*M
                         n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
                         GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P(3,i,L))*hl(X(r),j) &
-                         - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,i,Tps(s))*Sb)
+                        & - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,i,Tps(s))*Sb)
                     end do
                 end do
             end do
@@ -144,24 +148,101 @@ module ondelettes
 
     end subroutine G
 
-    subroutine jac(J, U, M)
+    subroutine jac(J, U, M, X, Tps, L)
         ! routine pour calculer la jacobienne par rapport a U de G
         integer, intent(in) :: M
+        real(rp), intent(in) :: L
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M), intent(out) :: J
+        real(rp), dimension(2*M+2), intent(in) :: X
+        real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp) :: Sa,Sb,Sua,Sub
+        integer :: ll,n,r,s,i,jj,k,la,lb
 
+        do r = 1,2*M+2 ! boucles sur les lignes => sur les points (x_r,t_s)
+            do s = 1,2*M
+                k = 2*M*(s-1)+r
+                Sa = 0._rp
+                Sb = 0._rp
+                Sua = 0._rp
+                Sub = 0._rp
+                do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
+                    Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
+                    Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
+                end do
+                ! on calcule pour les u_ij
+                do i = 1,2*M ! boucles sur les colonnes => sur les U_j
+                    do jj = 1,2*M
+                        n = 2*M*(i-1)+jj
+                        J(k,ll) = (P(2,i,X(r))-2.*X(r)/L**2*P(3,i,L))*hl(Tps(s),jj) &
+                        & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-2./L**2*P(3,i,L))*P(1,jj,Tps(s))*Sb
+
+                        ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
+                        Sua = Sua - U(n)*hl(X(r),i)*P(1,jj,Tps(s))
+                        Sub = Sub + U(n)*P(1,jj,Tps(s))*(2./L**2*P(3,i,L)-P(1,i,X(r)))
+                    end do
+                end do
+                ! Puis pour les a_l et b_l
+                do ll = 1,2*M
+                    la = 4*M**2+ll
+                    lb = 4*M**2+2*M+ll
+                    J(k,la) = hl(X(r),la)*(Sua + dxx_phi(X(r)))
+                    J(k,lb) = hl(X(r),lb)*(Sub - 2./L**2*H_0(Tps(s)) + 2./L*(mu_1(Tps(s)) - phi(0._rp)) &
+                    & + 2./L**2*int_phi(L)- dx_phi(X(r)))
+                end do
+            end do
+        end do
 
     end subroutine jac
 
-    subroutine newton(U, M, eps)
+    subroutine newton(U, M, eps, X, Tps, L)
         ! routine pour la methode de Newton
         integer, intent(in) :: M 
+        real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
         real(rp), dimension(4*M**2+4*M), intent(inout) :: U ! en entree: U_0, en sortie: U_k la racine de G(U) = 0
+        real(rp), dimension(2*M+2), intent(in) :: X
+        real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp), dimension(4*M**2+4*M) :: GU
+        real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
+        integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
+        integer :: info
+        real(rp) :: conv
+        integer :: itermax = 1000, nb_iter
 
+        ! initialisation
+        U(:) = 1._rp
+        conv = 1._rp
+        nb_iter = 0
 
-
+        ! iterations
+        do while (conv > eps .AND. nb_iter < itermax)
+            call G(GU, U, L, M, X, Tps) ! on calcule G(U)
+            call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
+            GU(:) = -GU(:) ! on prend l'oppose pour G(U)
+            ! on inverse le systeme
+            call DGESV(4*M**2+4*M,4*M**2+4*M,J,4*M**2+4*M,ipiv,GU,1,info) ! le resultat est enregistre dans GU
+            if (info /= 0) then
+                write(6,*) 'Probleme pour l inversion de systeme'
+                stop
+            end if
+            U(:) = GU(:) + U(:) ! on calcule U_k+1
+            conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
+            nb_iter = nb_iter+1
+        end do
+        write(6,*) 'Nb d iterations pour Newton : ', nb_iter
     end subroutine newton
+
+    real(rp) function norme_L2(U, Ns)
+        integer :: Ns
+        real(rp), dimension(Ns) :: U
+        integer :: i
+        norme_L2 = 0._rp
+        do i = 1,Ns
+            norme_L2 = norme_L2+U(i)**2
+        end do
+        norme_L2 = sqrt(norme_L2)
+    end function norme_L2
 
 
     subroutine reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
@@ -194,8 +275,6 @@ module ondelettes
                 Bapp(i) = Bapp(i)+ U(4*M**2+2*M+i)*hl(Tps(s), i)
             end do
         end do
-
-
     end subroutine reconstruction_sol
 
 end module ondelettes
