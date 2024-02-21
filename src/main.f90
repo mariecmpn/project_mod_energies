@@ -29,10 +29,13 @@ program inverse_pb
     ! on discretise l'espace
     call discretisation(X, Tps, M, L, T)
 
-    ! on utilise newton pour trouver le zero de la fonction G(U)
-    call newton(U, M, eps, X, Tps, L)
+    do r =1,2*M
+        Aex(r) = hl(Tps(r),3)
+    end do
+    call save_a_or_b('solution_a.dat', Aex, Tps, M)
 
-    write(6,*) (U(k), k=1,2)
+    ! on utilise newton pour trouver le zero de la fonction G(U)
+    !call newton(U, M, eps, X, Tps, L)
 
     ! on reconstruit les solution a partir des coefficients determines ci-dessus
     call reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
@@ -53,6 +56,6 @@ program inverse_pb
     
 
 
-    deallocate(U, X, Tps, Uapp, Aapp, Bapp)
+    deallocate(U, X, Tps, Uapp, Aapp, Bapp, Uex, Aex, Bex, err_u, err_a, err_b)
 
 end program inverse_pb

@@ -115,7 +115,7 @@ module initialisation
     real(rp) function f(x,t)
         ! fonction pour f
         real(rp) :: x,t
-        f = exp(t)*((1.+t)*exp(-x) + x**2 + 2.*(1.+t) - 2.*x*(1.+t))
+        f = exp(t)*((1.+t)*exp(-x) + x**2 + 2.*(1.+t) - 2.*x*(1.+2.*t))
     end function f
 
     real(rp) function dx_phi(x)

@@ -58,17 +58,17 @@ module ondelettes
             M1 = 2**j
             M2 = 2**(j+1)
             do while (not_found .AND. l < 10000) ! on limite a l < 10000
-                if (l > M1 .AND. l<= M2) then ! si on est dans le bon intervalle
+                if (l > M1 .AND. l <= M2) then ! si on est dans le bon intervalle
                     k = l-M1-1 ! car l = m+k+1
-                    hl = h2(x*2**j-k) ! on utilise l'expression de h_2
-                    !if ((x >= real(k)/real(M1)) .AND. (x < real(k+0.5)/real(M1))) then
-                    !    write(6,*) real(k)/real(M1), real(k+0.5)/real(M1)
-                    !    hl = 1._rp
-                    !else if ((x >= real(k+0.5)/real(M1)) .AND. (x < real(k+1)/real(M1))) then
-                    !    hl = -1._rp
-                    !else
-                    !   hl = 0._rp
-                    !end if
+                    !hl = h2(x*2**j-k) ! on utilise l'expression de h_2
+                    write(6,*) real(k)/real(M1), real(k+0.5)/real(M1), real(k+1)/real(M1)
+                    if ((x >= real(k)/real(M1)) .AND. (x < real(k+0.5)/real(M1))) then
+                        hl = 1._rp
+                    else if ((x >= real(k+0.5)/real(M1)) .AND. (x < real(k+1)/real(M1))) then
+                        hl = -1._rp
+                    else
+                       hl = 0._rp
+                    end if
                     not_found = .FALSE. ! on a trouve le bon intervalle et on a calcule l'ondelette donc on peut sortir de la boucle
                 else ! si on n'est pas dans le bon intervalle pour m on change de j
                     j = j+1
@@ -81,27 +81,33 @@ module ondelettes
 
     real(rp) function P(beta, i, x)
         integer :: beta, i ! beta = nbre de fois qu'on intègre l'ondelette, i = indice i de l'ondelette h_i
-        real(rp) :: x
+        real(rp) :: x, x1, x2, x3
         integer :: k, j, m
         integer :: M1,M2
         logical :: not_found = .TRUE.
+        integer :: t1, t2, ir
+        real(rp) :: temps
 
+        call system_clock(count=t1, count_rate=ir)
         j = 0
-        M1 = 0
-        M2 = 1
+        M1 = 2**j
+        M2 = 2**(j+1)
         not_found = .TRUE.
         do while (not_found .AND. i < 10000) ! on limite a i < 10000
-            if (i > M1 .AND. i<= M2) then ! si on est dans le bon intervalle
-                m = M1
+            if (i >= M1 .AND. i < M2) then ! si on est dans le bon intervalle
+                m = M1 
                 k = i-m-1 ! car i = m+k+1
-                if (x < real(k)/m) then
+                x1 = real(k)/real(m, kind=rp)
+                x2 = (real(k)+0.5)/real(m, kind=rp)
+                x3 = (real(k)+1.)/real(m, kind=rp)
+                if (x < x1) then
                     P = 0._rp
-                else if ((x >= real(k)/m) .AND. (x<(real(k)+0.5)/m)) then
-                    P = (1._rp/facto(beta))*(x - real(k)/m)**beta
-                else if ((x>=(real(k)+0.5)/m) .AND. (x<(real(k)+1.)/m)) then
-                    P = (1._rp/facto(beta))*((x - real(k)/m)**beta - 2._rp*(x - (real(k)+0.5_rp)/m)**beta)
+                else if ((x >= x1) .AND. (x<x2)) then
+                    P = (1._rp/facto(beta))*(x - x1)**beta
+                else if ((x>=x2) .AND. (x<x3)) then
+                    P = (1._rp/facto(beta))*((x - x1)**beta - 2._rp*(x - x2)**beta)
                 else
-                    P = (1._rp/facto(beta))*((x-real(k)/m)**beta-2._rp*(x-(real(k)+0.5_rp)/m)**beta+(x-(real(k)+1._rp)/m)**beta)
+                    P = (1._rp/facto(beta))*((x-x1)**beta-2._rp*(x-x2)**beta+(x-x3)**beta)
                 end if
                 not_found = .FALSE. ! on a trouve le bon intervalle et on a calcule l'ondelette donc on peut sortir de la boucle
             else ! si on n'est pas dans le bon intervalle pour m on change de j
@@ -110,6 +116,11 @@ module ondelettes
                 M2 = 2**(j+1)
             end if
         end do
+        call system_clock (count=t2, count_rate=ir)
+        temps = REAL (t2 - t1,KIND=REAL64) / REAL(ir,KIND=REAL64)
+        !write(6,*) 'Temps de calcul pour l ondelette integrale = ', temps
+        !write(6,*) 'Avec beta = ', beta
+        !write(6,*) 'i = ', i
     end function P
 
     subroutine G(GU, U, L, M, X, Tps)
@@ -121,7 +132,7 @@ module ondelettes
         real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(4*M**2+4*M), intent(out) :: GU
         integer :: i,j,ll,k,r,s,n
-        real(rp) :: Sa, Sb
+        real(rp) :: Sa, Sb, P3iL
 
         ! initialisation des termes a zero
         GU(:) = 0._rp
@@ -129,8 +140,7 @@ module ondelettes
         Sb = 0._rp
         do r = 1,2*M+2
             do s = 1,2*M
-                k = 2*M*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
-                !write(6,*) k
+                k = (2*M+2)*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
                 Sa = 0._rp
                 Sb = 0._rp
                 do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
@@ -147,13 +157,13 @@ module ondelettes
                 do i = 1,2*M
                     do j = 1,2*M
                         n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
-                        GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P(3,i,L))*hl(X(r),j) &
-                        & - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,i,Tps(s))*Sb)
+                        P3iL = P(3,i,L)
+                        GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P3iL)*hl(Tps(s),j) &
+                        & - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P3iL)*P(1,j,Tps(s))*Sb)
                     end do
                 end do
             end do
         end do
-
     end subroutine G
 
     subroutine jac(J, U, M, X, Tps, L)
@@ -169,7 +179,7 @@ module ondelettes
 
         do r = 1,2*M+2 ! boucles sur les lignes => sur les points (x_r,t_s)
             do s = 1,2*M
-                k = 2*M*(s-1)+r
+                k = (2*M+2)*(s-1)+r
                 Sa = 0._rp
                 Sb = 0._rp
                 Sua = 0._rp
@@ -182,22 +192,31 @@ module ondelettes
                 do i = 1,2*M ! boucles sur les colonnes => sur les U_j
                     do jj = 1,2*M
                         n = 2*M*(i-1)+jj
-                        J(k,ll) = (P(2,i,X(r))-(2.*X(r)/L**2)*P(3,i,L))*hl(Tps(s),jj) &
-                        & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-2./L**2*P(3,i,L))*P(1,jj,Tps(s))*Sb
+                        J(k,ll) = (P(2,i,X(r))-(2.*X(r)/(L**2))*P(3,i,L))*hl(Tps(s),jj) &
+                        & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,jj,Tps(s))*Sb
 
                         ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
-                        Sua = Sua - U(n)*hl(X(r),i)*P(1,jj,Tps(s))
-                        Sub = Sub + U(n)*P(1,jj,Tps(s))*(2./L**2*P(3,i,L)-P(1,i,X(r)))
+                        Sua = Sua + U(n)*hl(X(r),i)*P(1,jj,Tps(s))
+                        write(6,*) 'hl = ', hl(X(r),i), 'P_1 = ', P(1,jj,Tps(s))
+                        Sub = Sub + U(n)*hl(X(r),i)*P(1,jj,Tps(s))*((2./L**2)*P(3,i,L)-P(1,i,X(r)))
+                        write(6,*) 'P_3 = ', P(3,i,L)
+                        write(6,*) ' - P_1 = ', P(1,i,X(r))
                     end do
                 end do
+                write(6,*) 'Sua = ', Sua
+                write(6,*) 'Sub = ', Sub
                 ! Puis pour les a_l et b_l
                 do ll = 1,2*M
                     la = 4*M**2+ll
                     lb = 4*M**2+2*M+ll
-                    J(k,la) = hl(X(r),la)*(Sua - dxx_phi(X(r)))
-                    J(k,lb) = hl(X(r),lb)*(Sub - 2./L**2*H_0(Tps(s)) + 2./L*(mu_1(Tps(s)) - phi(0._rp)) &
-                    & + 2./L**2*int_phi(L)- dx_phi(X(r)))
+                    J(k,la) = -hl(X(r),la)*(Sua + dxx_phi(X(r)))
+                    J(k,lb) = hl(X(r),lb)*(Sub - (2./L**2)*H_0(Tps(s)) + (2./L)*(mu_1(Tps(s)) - phi(0._rp)) &
+                    & + (2./L**2)*int_phi(L)- dx_phi(X(r)))
                 end do
+                do ll = 1,4*M**2+4
+                    write(6,*) (J(ll,jj), jj=1,4*M**2+4)
+                end do
+                write(6,*)
             end do
         end do
 
@@ -208,33 +227,32 @@ module ondelettes
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
-        !real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
-        real(rp), dimension(2), intent(out) :: U
+        real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
         real(rp), dimension(2*M+2), intent(in) :: X
         real(rp), dimension(2*M), intent(in) :: Tps
-        !real(rp), dimension(4*M**2+4*M) :: GU
-        real(rp), dimension(2) :: GU
-        !real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
-        real(rp), dimension(2,2) :: J
+        real(rp), dimension(4*M**2+4*M) :: GU
+        real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
         integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
         integer :: info, i, jj
         real(rp) :: conv
         integer :: itermax = 1000, nb_iter
 
         ! initialisation
-        U(:) = 0.5_rp
+        call random_number(U)
         conv = 1._rp
         nb_iter = 0
 
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
             call G(GU, U, L, M, X, Tps) ! on calcule G(U)
-            !write(6,*) (GU(i), i =1,4*M**2+4*M)
-            !write(6,*)
+            write(6,*) (GU(i), i =1,4*M**2+4*M)
+            write(6,*) 'OK GU'
+            write(6,*)
             call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
-            !do i = 1,4*M**2+4*M
-            !    write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
-            !end do
+            write(6,*) 'OK Jac'
+            do i = 1,4*M**2+4*M
+                write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
+            end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
             ! on inverse le systeme
             call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
@@ -247,11 +265,13 @@ module ondelettes
             end if
             U(:) = GU(:) + U(:) ! on calcule U_k+1
             conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
-            !conv = norme_L2(GU,2)/norme_L2(U,2)
             nb_iter = nb_iter+1
         end do
         write(6,*) 'Nb d iterations pour Newton : ', nb_iter
     end subroutine newton
+
+    !-----------------------------------------------
+    ! Fonctions tests pour la methode de Newton
 
     subroutine G_test(GU,U)
         real(rp), dimension(2), intent(out) :: GU
@@ -269,6 +289,7 @@ module ondelettes
         J(2,2) = 2*U(2)+6._rp
     end subroutine Jac_test
 
+    !-----------------------------------------------
 
 
     real(rp) function norme_L2(U, Ns)
