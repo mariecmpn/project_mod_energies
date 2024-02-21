@@ -228,19 +228,17 @@ module ondelettes
 
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
-            !call G(GU, U, L, M, X, Tps) ! on calcule G(U)
-            call G_test(GU,U)
+            call G(GU, U, L, M, X, Tps) ! on calcule G(U)
             !write(6,*) (GU(i), i =1,4*M**2+4*M)
             !write(6,*)
-            !call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
-            call Jac_test(J,U)
+            call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
             !do i = 1,4*M**2+4*M
             !    write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
             !end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
             ! on inverse le systeme
-            !call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
-            call DGESV(2,1,J,2,ipiv,GU,2,info)
+            call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
+            !call DGESV(2,1,J,2,ipiv,GU,2,info)
             if (info /= 0) then
                 write(6,*) 'Probleme pour l inversion de systeme'
                 if (info < 0) write(6,*) 'le coefficient d indice ', info, ' a une valeur illegale'
@@ -248,8 +246,8 @@ module ondelettes
                 stop
             end if
             U(:) = GU(:) + U(:) ! on calcule U_k+1
-            !conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
-            conv = norme_L2(GU,2)/norme_L2(U,2)
+            conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
+            !conv = norme_L2(GU,2)/norme_L2(U,2)
             nb_iter = nb_iter+1
         end do
         write(6,*) 'Nb d iterations pour Newton : ', nb_iter
@@ -258,17 +256,17 @@ module ondelettes
     subroutine G_test(GU,U)
         real(rp), dimension(2), intent(out) :: GU
         real(rp), dimension(2), intent(in) :: U
-        GU(1) = U(1)**2+U(2)**2
-        GU(2) = U(1)**4+U(2)**4
+        GU(1) = U(2)+1._rp
+        GU(2) = (U(1)-2.)**2+(U(2)+3.)**2-4.
     end subroutine G_test
 
     subroutine Jac_test(J,U)
         real(rp), dimension(2,2), intent(out) :: J
         real(rp), dimension(2), intent(in) :: U
-        J(1,1) = 2*U(1)
-        J(1,2) = 2*U(2)
-        J(2,1) = 4*U(1)**3
-        J(2,2) = 4*U(2)**3
+        J(1,1) = 0._rp
+        J(1,2) = 1._rp
+        J(2,1) = 2*U(1)-4._rp
+        J(2,2) = 2*U(2)+6._rp
     end subroutine Jac_test
 
 
