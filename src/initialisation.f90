@@ -64,7 +64,7 @@ module initialisation
     subroutine save_a_or_b(file_name, A, Tps, M)
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         integer, intent(in) :: M
-        real(rp), dimension(4*M**2+4*M) :: A
+        real(rp), dimension(2*M), intent(in) :: A
         real(rp), dimension(2*M), intent(in) :: Tps
         integer :: my_unit ! unite logique du fichier a ouvrir
         integer :: l

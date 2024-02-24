@@ -32,8 +32,8 @@ module ondelettes
     ! retourne 1 entre 0 et 0.5, -1 entre 0.5 et 1, 0 sinon
         real(rp) :: x
         real(rp) :: y
-        if (x>=0 .and. x<0.5) then
-        y = 1._rp
+        if (x>=0. .and. x<0.5) then
+            y = 1._rp
         else if (x>=0.5 .and. x<1) then 
             y = -1._rp
         else
@@ -47,6 +47,7 @@ module ondelettes
         integer :: l, k, j
         integer :: M1,M2
         logical :: not_found = .TRUE.
+        real(rp) :: x1,x2,x3
 
         if (l == 1) then
             hl = h1(x)
@@ -61,10 +62,12 @@ module ondelettes
                 if (l > M1 .AND. l <= M2) then ! si on est dans le bon intervalle
                     k = l-M1-1 ! car l = m+k+1
                     !hl = h2(x*2**j-k) ! on utilise l'expression de h_2
-                    write(6,*) real(k)/real(M1), real(k+0.5)/real(M1), real(k+1)/real(M1)
-                    if ((x >= real(k)/real(M1)) .AND. (x < real(k+0.5)/real(M1))) then
+                    x1 = real(k)/real(M1, kind=rp)
+                    x2 = (real(k)+0.5)/real(M1, kind=rp)
+                    x3 = (real(k)+1.)/real(M1, kind=rp)
+                    if ((x >= x1) .AND. (x < x2)) then
                         hl = 1._rp
-                    else if ((x >= real(k+0.5)/real(M1)) .AND. (x < real(k+1)/real(M1))) then
+                    else if ((x >= x2) .AND. (x < x3)) then
                         hl = -1._rp
                     else
                        hl = 0._rp
@@ -213,9 +216,9 @@ module ondelettes
                     J(k,lb) = hl(X(r),lb)*(Sub - (2./L**2)*H_0(Tps(s)) + (2./L)*(mu_1(Tps(s)) - phi(0._rp)) &
                     & + (2./L**2)*int_phi(L)- dx_phi(X(r)))
                 end do
-                do ll = 1,4*M**2+4
-                    write(6,*) (J(ll,jj), jj=1,4*M**2+4)
-                end do
+                !do ll = 1,4*M**2+4
+                !    write(6,*) (J(ll,jj), jj=1,4*M**2+4)
+                !end do
                 write(6,*)
             end do
         end do
