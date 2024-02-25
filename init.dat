@@ -1,3 +1,4 @@
 1.0 :: L longueur de l'intervalle en x
 1.0 :: T longueur de l'intervalle en t
 2 :: M nombre de termes dans les sommes = 2*M
+D :: D pour resolution du probleme direct, I pour resolution du probleme indirect (par defaut probleme indirect)

@@ -83,6 +83,7 @@ module ondelettes
     end function hl
 
     real(rp) function P(beta, i, x)
+    ! fonction qui calcule l'ondelette integrale P_{beta,i} au point x
         integer :: beta, i ! beta = nbre de fois qu'on intègre l'ondelette, i = indice i de l'ondelette h_i
         real(rp) :: x, x1, x2, x3
         integer :: k, j, m
@@ -293,7 +294,85 @@ module ondelettes
     end subroutine Jac_test
 
     !-----------------------------------------------
+    ! Routines et fonctions pour la resolution du 
+    ! probleme direct
 
+    subroutine vect_discretisation(D, ind, X, Tps, M)
+        integer, intent(in) :: M 
+        real(rp), dimension(2*M), intent(in) :: X
+        real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp), dimension(2,4*M**2), intent(out) :: D
+        integer, dimension(2,4*M**2), intent(out) :: ind
+        integer :: r,s,k
+
+        do r = 1,2*M ! boucles sur les lignes => sur les points (x_r,t_s)
+            do s = 1,2*M
+                k = (2*M)*(s-1)+r
+                D(1,k) = X(r)
+                D(2,k) = Tps(s)
+                ind(1,k) = r
+                ind(2,k) = s
+            end do
+        end do
+    end subroutine vect_discretisation
+
+    subroutine syst_direct(A, U, M, D, ind, L)
+        integer, intent(in) :: M 
+        real(rp), intent(in) :: L
+        real(rp), dimension(4*M**2), intent(out) :: U
+        real(rp), dimension(4*M**2,4*M**2), intent(out) :: A
+        real(rp), dimension(2,4*M**2), intent(in) :: D
+        integer, dimension(2,4*M**2), intent(in) :: ind
+        integer :: i,j,ll,kk
+        real(rp) :: x,t
+
+        do kk = 1,4*M**2 ! boucle sur les colonnes de A
+            do ll = 1,4*M**2 ! boucle sur les lignes de A 
+                x = D(1,ll)
+                t = D(2,ll)
+                i = ind(1,kk)
+                j = ind(2,kk)
+                A(i,j) = a_ex(t)*((P(2,i,x)-(2.*x/L**2)*P(3,i,L))*hl(t,j)-hl(x,i)*P(1,j,t)) &
+                & -(P(1,i,x)-(2./L**2)*P(3,i,L)*P(1,j,t))*b_ex(t)
+            end do
+            ! on utilise la meme boucle pour calculer le vecteur second membre (ici donc kk designe l'indice de ligne)
+            x = D(1,kk)
+            t = D(2,kk)
+            U(j) = a_ex(t)*dxx_phi(x) +b_ex(t)*((2./L**2)*H_0(t)-2./L*mu_1(t)-(2./L**2)*int_phi(L) &
+            & + 2./L*phi(0._rp)+dx_phi(x) - (1.-2./L)*dt_mu_1(t) - (2.*x/L**2)*dt_H_0(t) + f(x,t))
+        end do
+    end subroutine syst_direct
+
+    function mat_ID(M)
+        real(rp), dimension(M,M) :: mat_ID
+        integer :: M
+        integer :: i
+
+        mat_ID(:,:) = 0._rp
+        do i = 1,M
+            mat_ID(i,i) = 1._rp
+        end do
+    end function mat_ID
+
+    subroutine regularization(U, A, m, mu)
+        ! routine pour la regularization du systeme lineaire a inverser
+        integer, intent(in) :: M 
+        real(rp), intent(in) :: mu
+        real(rp), dimension(4*M**2), intent(inout) :: U
+        real(rp), dimension(4*M**2,4*M**2), intent(inout) :: A
+        real(rp), dimension(4*M**2,4*M**2) :: tA
+
+        ! calcul de la transposee de A
+        tA = transpose(A)
+
+        ! matrice A
+        A = matmul(tA,A)+mu*mat_ID(4*M**2)
+        
+        ! second membre
+        U = matmul(tA,U)
+    end subroutine regularization
+
+    !-----------------------------------------------
 
     real(rp) function norme_L2(U, Ns)
         integer :: Ns
@@ -325,7 +404,7 @@ module ondelettes
             do r = 1,2*M+2 ! boucle sur le maillage en espace
                 do i = 1,2*M ! boucles sur les indices de u_ij
                     do j = 1,2*M
-                        k = 2*M*(j-1)+i
+                        k = (2*M+2)*(j-1)+i
                         Uapp(k) = Uapp(k) + U(k)*hl(X(r),i)*hl(Tps(s),j) ! decomposition en ondelettes de Haar de u
                     end do
                 end do

@@ -16,3 +16,6 @@ Contenu du dossier:
 Compilation:
 Il faut aller dans le dossier src, puis faire make. Les fichiers binaires seront stockés dans le dossier bin, et le fichier exécutable dans le dossier parent de src. Les variables du problème sont à définir dans init.dat.
 
+Librairies nécessaires:
+Il faut avoir installer au préalable la librairie d'algèbre linéaire LAPACK (pour les inversions de systèmes).
+
