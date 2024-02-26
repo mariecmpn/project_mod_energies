@@ -19,14 +19,16 @@ program inverse_pb
     real(rp), dimension(:), allocatable :: Aex, Bex, Uex ! vecteur des solutions exactes
     real(rp), dimension(:), allocatable :: err_a, err_b, err_u
     real(rp) :: eps = 1.D-6
+    real(rp) :: mu
     integer :: r,s,k,info
     integer, dimension(:), allocatable :: ipiv ! pour routine lapack
     character(len=1) :: pb
 
     ! lecture des donnees
-    call read_file('init.dat', L, T, M, pb)
+    call read_file('init.dat', L, T, M, pb, mu)
 
-    if (pb == 'D') then 
+    if (pb == 'D') then ! PROBLEME DIRECT
+
         ! on alloue dynamiquement les tableaux
         allocate(U(2), X(2*M), Tps(2*M), Uapp(4*M**2), D(2,4*M**2), ind(2,4*M**2), ipiv(4*M**2))
         allocate(Uex(4*M**2), err_u(4*M**2+4*M))
@@ -47,11 +49,16 @@ program inverse_pb
         call DGESV(4*M**2,1,A,4*M**2,ipiv,U,4*M**2,info)
 
         ! on reconstruit la solution U
-        
+        call reconst_u_dir(Uapp, Uex, U, D, ind, M)
+
+        ! on enregistre la solution approchee
+        call save_u_dir('solution_u_pbdir.dat', Uapp, D, M)
 
 
         deallocate(U, X, Tps, Uapp, Uex, err_u)
-    else 
+
+    else ! PROBLEME INVERSE
+
         ! on alloue dynamiquement les tableaux
         allocate(U(2), X(2*M+2), Tps(2*M), Uapp(4*M**2+4*M), Aapp(2*M), Bapp(2*M))
         allocate(Uex(4*M**2+4*M), Aex(2*M), Bex(2*M), err_u(4*M**2+4*M), err_b(2*M), err_a(2*M))

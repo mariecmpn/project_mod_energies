@@ -9,8 +9,8 @@ Contenu du dossier:
 - init.dat: fichier qui permet l'initialisation de variables
 - src/main.f90: code Fortran du programme principal
 - src/numerics.f90: module Fortran qui permet de déclarer les constantes utiles à tout le programme (double précision...)
-- src/ondelettes.f90: module Fortran pour les fonctions et routines utiles à la définition des ondelettes de Haar
-- src/leastsquares.f90: module Fortran pour les fonctions et routines utiles à la méthode des moindres carrés présentés dans le papier
+- src/ondelettes.f90: module Fortran pour les fonctions et routines utiles à la définition des ondelettes de Haar et de la résolution du problème inverse
+- src/pbdirect.f90: module Fortran pour les fonctions et routines utiles à la résolution du problème direct
 - src/Makefile: Makefile du projet
 
 Compilation:

@@ -4,13 +4,14 @@ module initialisation
 
     contains
 
-    subroutine read_file(file_name,L,T,M,pb)
+    subroutine read_file(file_name, L, T, M, pb, mu)
         ! subroutine qui recupere les informations du fichier file_name
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         real(rp), intent(out) :: L,T ! dimensions du domaine
         integer, intent(out) :: M ! nombre de termes dans la somme
         integer :: my_unit ! unite logique du fichier a ouvrir
         character(len=1), intent(out) :: pb
+        real(rp), intent(out) :: mu 
 
         open(newunit = my_unit, file = file_name, action = 'read', form = 'formatted', status = 'old')
 
@@ -18,17 +19,23 @@ module initialisation
         read(my_unit,*) T
         read(my_unit,*) M
         read(my_unit,*) pb
+        read(my_unit,*) mu
 
         if (pb == 'D') then
-            write(6,*) 'Resolution du probleme direct'
+            write(6,*) 'Resolution du probleme direct:'
             write(6,*) 'On cherche seulement a determiner u'
+            write(6,*) 'M = ', M, ' donc nombre de termes dans les sommes d ondelettes: ', 2*M
+            write(6,*) 'Nombre de points de maillage: 4M^2 = ', 4*M**2
+            write(6,*) 'Dimensions du domaine (0,L)x(0,T): L = ', L, ' T = ', T
         else
-            write(6,*) 'Resolution du probleme indirect'
+            write(6,*) 'Resolution du probleme indirect:'
             write(6,*) 'On cherche a determiner u, a, et b'
+            write(6,*)
+            write(6,*) 'M = ', M, ' donc nombre de termes dans les sommes d ondelettes: ', 2*M
+            write(6,*) 'Nombre de points de maillage: 4M^2+4M = ', 4*M**2+4*M
+            write(6,*) 'Dimensions du domaine (0,L)x(0,T): L = ', L, ' T = ', T
         end if
-        write(6,*) 'M = ', M, ' donc nombre de termes dans les sommes: ', 2*M
-        write(6,*) 'Nombre de points de maillage: 4M^2+4M = ', 4*M**2+4*M
-        write(6,*) 'Dimensions du domaine (0,L)x(0,T): L = ', L, ' T = ', T
+        write(6,*)
 
         close(my_unit)
     end subroutine read_file
@@ -48,19 +55,6 @@ module initialisation
         X(2*M+1) = real(2*M)*L/real(2*M+1)
         X(2*M+2) = L
     end subroutine discretisation
-
-    subroutine discretisation_dir(X, Tps, M, L, T)
-        real(rp), intent(in) :: L, T
-        integer, intent(in) :: M
-        real(rp), dimension(2*M), intent(out) :: X
-        real(rp), dimension(2*M), intent(out) :: Tps
-        integer :: i
-
-        do i =1,2*M
-            X(i) = real(i-1)*L/real(2*M-1)
-            Tps(i) = real(i-1)*T/real(2*M-1)
-        end do 
-    end subroutine discretisation_dir
 
     subroutine save_u(file_name, U, X, Tps, M)
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
