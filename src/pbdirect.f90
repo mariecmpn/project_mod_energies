@@ -65,36 +65,6 @@ module pbdirect
         end do
     end subroutine syst_direct
 
-    function mat_ID(M)
-        ! fonction qui renvoie la matrice identite de taille M
-        real(rp), dimension(M,M) :: mat_ID
-        integer :: M
-        integer :: i
-
-        mat_ID(:,:) = 0._rp
-        do i = 1,M
-            mat_ID(i,i) = 1._rp
-        end do
-    end function mat_ID
-
-    subroutine regularization(U, A, m, mu)
-        ! routine pour la regularization du systeme lineaire a inverser
-        integer, intent(in) :: M 
-        real(rp), intent(in) :: mu
-        real(rp), dimension(4*M**2), intent(inout) :: U
-        real(rp), dimension(4*M**2,4*M**2), intent(inout) :: A
-        real(rp), dimension(4*M**2,4*M**2) :: tA
-
-        ! calcul de la transposee de A
-        tA = transpose(A)
-
-        ! matrice A
-        A = matmul(tA,A)+mu*mat_ID(4*M**2)
-        
-        ! second membre
-        U = matmul(tA,U)
-    end subroutine regularization
-
     subroutine reconst_u_dir(Uapp, Uex, U, D, ind, M)
         integer, intent(in) :: M 
         real(rp), dimension(4*M**2), intent(in) :: U

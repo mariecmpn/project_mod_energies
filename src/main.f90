@@ -43,7 +43,7 @@ program inverse_pb
         call syst_direct(A, U, M, D, ind, L)
 
         ! on regularise le systeme
-        call regularization(U, A, m, 1.D-01)
+        call regularization(U, A, 4*M**2, 1.D-01)
 
         ! on resoud le systeme
         call DGESV(4*M**2,1,A,4*M**2,ipiv,U,4*M**2,info)
