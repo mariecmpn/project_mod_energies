@@ -56,6 +56,26 @@ module initialisation
         X(2*M+2) = L
     end subroutine discretisation
 
+    subroutine vect_discret(D, ind, X, Tps, M)
+        ! routine pour vectoriser les points de maillage et recuperer les indices r,s tels que: k=(2*M+2)*(s-1)+r
+        integer, intent(in) :: M 
+        real(rp), dimension(2*M+2), intent(in) :: X
+        real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp), dimension(2,4*M**2+4*M), intent(out) :: D
+        integer, dimension(2,4*M**2+4*M), intent(out) :: ind
+        integer :: r,s,k
+
+        do r = 1,2*M+2 ! boucles sur les lignes => sur les points (x_r,t_s)
+            do s = 1,2*M
+                k = (2*M+2)*(s-1)+r
+                D(1,k) = X(r)
+                D(2,k) = Tps(s)
+                ind(1,k) = r
+                ind(2,k) = s
+            end do
+        end do
+    end subroutine vect_discret
+
     subroutine save_u(file_name, U, X, Tps, M)
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         integer, intent(in) :: M

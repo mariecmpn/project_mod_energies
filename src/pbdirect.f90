@@ -54,13 +54,13 @@ module pbdirect
                 t = D(2,ll)
                 i = ind(1,kk)
                 j = ind(2,kk)
-                A(i,j) = a_ex(t)*((P(2,i,x)-(2.*x/L**2)*P(3,i,L))*hl(t,j)-hl(x,i)*P(1,j,t)) &
+                A(ll,kk) = a_ex(t)*((P(2,i,x)-(2.*x/L**2)*P(3,i,L))*hl(t,j)-hl(x,i)*P(1,j,t)) &
                 & -(P(1,i,x)-(2./L**2)*P(3,i,L)*P(1,j,t))*b_ex(t)
             end do
             ! on utilise la meme boucle pour calculer le vecteur second membre (ici donc kk designe l'indice de ligne)
             x = D(1,kk)
             t = D(2,kk)
-            U(j) = a_ex(t)*dxx_phi(x) +b_ex(t)*((2./L**2)*H_0(t)-2./L*mu_1(t)-(2./L**2)*int_phi(L) &
+            U(kk) = a_ex(t)*dxx_phi(x) + b_ex(t)*((2./L**2)*H_0(t)-2./L*mu_1(t)-(2./L**2)*int_phi(L) &
             & + 2./L*phi(0._rp)+dx_phi(x) - (1.-2./L)*dt_mu_1(t) - (2.*x/L**2)*dt_H_0(t) + f(x,t))
         end do
     end subroutine syst_direct
@@ -125,7 +125,7 @@ module pbdirect
         open(newunit = my_unit, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
 
         do k=1,4*M**2
-            write(my_unit,*) D(1,k), D(2,k), Uapp
+            write(my_unit,*) D(1,k), D(2,k), Uapp(k)
         end do
 
         close(my_unit)

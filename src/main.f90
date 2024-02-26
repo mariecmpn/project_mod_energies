@@ -2,7 +2,7 @@ program inverse_pb
     use numerics
     use ondelettes
     use initialisation
-    use leastsquares
+    use pbdirect
     implicit none
 
     !--------------------------------
@@ -18,7 +18,7 @@ program inverse_pb
     real(rp), dimension(:), allocatable :: Aapp, Bapp, Uapp ! vecteurs des solutions approchees
     real(rp), dimension(:), allocatable :: Aex, Bex, Uex ! vecteur des solutions exactes
     real(rp), dimension(:), allocatable :: err_a, err_b, err_u
-    real(rp) :: eps = 1.D-6
+    real(rp) :: eps = 1.D-8
     real(rp) :: mu
     integer :: r,s,k,info
     integer, dimension(:), allocatable :: ipiv ! pour routine lapack
@@ -30,8 +30,8 @@ program inverse_pb
     if (pb == 'D') then ! PROBLEME DIRECT
 
         ! on alloue dynamiquement les tableaux
-        allocate(U(2), X(2*M), Tps(2*M), Uapp(4*M**2), D(2,4*M**2), ind(2,4*M**2), ipiv(4*M**2))
-        allocate(Uex(4*M**2), err_u(4*M**2+4*M))
+        allocate(U(2), X(2*M), Tps(2*M), Uapp(4*M**2), D(2,4*M**2), ind(2,4*M**2), ipiv(4*M**2), A(4*M**2,4*M**2))
+        allocate(Uex(4*M**2), err_u(4*M**2))
 
         ! on discretise l'espace
         call discretisation_dir(X, Tps, M, L, T)
@@ -48,26 +48,35 @@ program inverse_pb
         ! on resoud le systeme
         call DGESV(4*M**2,1,A,4*M**2,ipiv,U,4*M**2,info)
 
+        if (info == 0) write(6,*) 'Resolution du systeme lineaire reussie'
+
         ! on reconstruit la solution U
         call reconst_u_dir(Uapp, Uex, U, D, ind, M)
+
+        err_u(:) = Uex(:) - Uapp(:)
+
+        write(6,*) 'erreur L^2 entre u_ex et u_app: ', norme_L2(err_u,4*M**2)
 
         ! on enregistre la solution approchee
         call save_u_dir('solution_u_pbdir.dat', Uapp, D, M)
 
 
-        deallocate(U, X, Tps, Uapp, Uex, err_u)
+        deallocate(U, X, Tps, Uapp, Uex, A, D, ind, ipiv, err_u)
 
     else ! PROBLEME INVERSE
 
         ! on alloue dynamiquement les tableaux
-        allocate(U(2), X(2*M+2), Tps(2*M), Uapp(4*M**2+4*M), Aapp(2*M), Bapp(2*M))
+        allocate(U(2), X(2*M+2), Tps(2*M), Uapp(4*M**2+4*M), Aapp(2*M), Bapp(2*M), D(2,4*M**2+4*M), ind(2,4*M**2+4*M))
         allocate(Uex(4*M**2+4*M), Aex(2*M), Bex(2*M), err_u(4*M**2+4*M), err_b(2*M), err_a(2*M))
 
         ! on discretise l'espace
         call discretisation(X, Tps, M, L, T)
 
+        ! on vectorise le maillage
+        call vect_discret(D, ind, X, Tps, M)
+
         ! on utilise newton pour trouver le zero de la fonction G(U)
-        call newton(U, M, eps, X, Tps, L)
+        call newton(U, M, eps, D, L)
 
         ! on reconstruit les solution a partir des coefficients determines ci-dessus
         call reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
@@ -86,7 +95,7 @@ program inverse_pb
         call save_a_or_b('solution_a.dat', Aapp, Tps, M)
         call save_a_or_b('solution_b.dat', Bapp, Tps, M)
 
-        deallocate(U, X, Tps, Uapp, Aapp, Bapp, Uex, Aex, Bex, err_u, err_a, err_b)
+        deallocate(U, X, Tps, Uapp, Aapp, Bapp, Uex, Aex, Bex, err_u, err_a, err_b, D, ind)
     end if
 
 

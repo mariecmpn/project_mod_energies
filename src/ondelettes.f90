@@ -127,113 +127,178 @@ module ondelettes
         !write(6,*) 'i = ', i
     end function P
 
-    subroutine G(GU, U, L, M, X, Tps)
+    subroutine G(GU, U, L, M, D)
         ! subroutine pour calculer 
         real(rp), intent(in) :: L
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
-        real(rp), dimension(2*M+2), intent(in) :: X
-        real(rp), dimension(2*M), intent(in) :: Tps
+        !real(rp), dimension(2*M+2), intent(in) :: X
+        !real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(4*M**2+4*M), intent(out) :: GU
+        real(rp), dimension(2,4*M**2), intent(in) :: D
+        !integer, dimension(2,4*M**2), intent(in) :: ind
         integer :: i,j,ll,k,r,s,n
-        real(rp) :: Sa, Sb, P3iL
+        real(rp) :: Sa, Sb, P3iL, xx, tt
 
         ! initialisation des termes a zero
         GU(:) = 0._rp
         Sa = 0._rp
         Sb = 0._rp
-        do r = 1,2*M+2
-            do s = 1,2*M
-                k = (2*M+2)*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
-                Sa = 0._rp
-                Sb = 0._rp
-                do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
-                    Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
-                    Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
-                end do
-                ! contributions sans U
-                GU(k) = (1._rp-2._rp/L)*dt_mu_1(Tps(s))+(2./(L**2))*X(r)*dt_H_0(Tps(s))-f(X(r),Tps(s))
-                ! contributions avec seulement a
-                GU(k) = GU(k)-dxx_phi(X(r))*Sa
-                ! contributions avec seulement b
-                GU(k) = GU(k)+Sb*((2./L)*(mu_1(Tps(s))-phi(0._rp))+(2./L**2)*(int_phi(L)-H_0(Tps(s)))-dx_phi(X(r)))
-                ! contributions des u
-                do i = 1,2*M
-                    do j = 1,2*M
-                        n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
-                        P3iL = P(3,i,L)
-                        GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P3iL)*hl(Tps(s),j) &
-                        & - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P3iL)*P(1,j,Tps(s))*Sb)
-                    end do
+        !do r = 1,2*M+2
+        !    do s = 1,2*M
+        !        k = (2*M+2)*(s-1)+r ! on vectorise les points (x_r, t_s), 1<=r<=2M+2 et 1<=s<=2M, en (x_k,y_k), 1<=k<=4M**2+4M
+        !        Sa = 0._rp
+        !        Sb = 0._rp
+        !        do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
+        !            Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
+        !            Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
+        !        end do
+        !        ! contributions sans U
+        !        GU(k) = (1._rp-2._rp/L)*dt_mu_1(Tps(s))+(2./(L**2))*X(r)*dt_H_0(Tps(s))-f(X(r),Tps(s))
+        !        ! contributions avec seulement a
+        !        GU(k) = GU(k)-dxx_phi(X(r))*Sa
+        !        ! contributions avec seulement b
+        !        GU(k) = GU(k)+Sb*((2./L)*(mu_1(Tps(s))-phi(0._rp))+(2./L**2)*(int_phi(L)-H_0(Tps(s)))-dx_phi(X(r)))
+        !        ! contributions des u
+        !        do i = 1,2*M
+        !            do j = 1,2*M
+        !                n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
+        !                P3iL = P(3,i,L)
+        !                GU(k) = GU(k)+U(n)*((P(2,i,X(r))-(2./L**2)*X(r)*P3iL)*hl(Tps(s),j) &
+        !               & - hl(X(r),i)*P(1,j,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P3iL)*P(1,j,Tps(s))*Sb)
+        !            end do
+        !        end do
+        !    end do
+        !end do
+
+
+        do k = 1,4*M**2+4*M ! boucle sur les lignes de GU
+            xx = D(1,k) 
+            tt = D(2,k)
+            Sa = 0._rp
+            Sb = 0._rp
+            do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
+                Sa = Sa + U(4*M**2+ll)*hl(tt,ll)
+                Sb = Sb + U(4*M**2+2*M+ll)*hl(tt,ll)
+            end do
+            ! contributions sans U
+            GU(k) = (1._rp-2._rp/L)*dt_mu_1(tt)+(2./(L**2))*xx*dt_H_0(tt)-f(xx,tt)
+            ! contributions avec seulement a
+            GU(k) = GU(k)-dxx_phi(xx)*Sa
+            ! contributions avec seulement b
+            GU(k) = GU(k)+Sb*((2./L)*(mu_1(tt)-phi(0._rp))+(2./L**2)*(int_phi(L)-H_0(tt))-dx_phi(xx))
+            do i = 1,2*M
+                do j = 1,2*M
+                    n = 2*M*(i-1)+j ! on vectorise les u_ij, 1<=i,j<=2M, en u_n, 1<=n<=4*M**2
+                    P3iL = P(3,i,L)
+                    GU(k) = GU(k)+U(n)*((P(2,i,xx)-(2./L**2)*xx*P3iL)*hl(tt,j) &
+                    & - hl(xx,i)*P(1,j,xx)*Sa - (P(1,i,xx)-(2./L**2)*P3iL)*P(1,j,tt)*Sb)
                 end do
             end do
         end do
     end subroutine G
 
-    subroutine jac(J, U, M, X, Tps, L)
+    subroutine jac(J, U, M, D, L)
         ! routine pour calculer la jacobienne par rapport a U de G
         integer, intent(in) :: M
         real(rp), intent(in) :: L
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M), intent(out) :: J
-        real(rp), dimension(2*M+2), intent(in) :: X
-        real(rp), dimension(2*M), intent(in) :: Tps
-        real(rp) :: Sa,Sb,Sua,Sub
+        !real(rp), dimension(2*M+2), intent(in) :: X
+        !real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp), dimension(2,4*M**2), intent(in) :: D
+        !integer, dimension(2,4*M**2), intent(in) :: ind
+        real(rp) :: Sa,Sb,Sua,Sub,xx,tt
         integer :: ll,n,r,s,i,jj,k,la,lb
 
-        do r = 1,2*M+2 ! boucles sur les lignes => sur les points (x_r,t_s)
-            do s = 1,2*M
-                k = (2*M+2)*(s-1)+r
-                Sa = 0._rp
-                Sb = 0._rp
-                Sua = 0._rp
-                Sub = 0._rp
-                do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
-                    Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
-                    Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
-                end do
-                ! on calcule pour les u_ij
-                do i = 1,2*M ! boucles sur les colonnes => sur les U_j
-                    do jj = 1,2*M
-                        n = 2*M*(i-1)+jj
-                        J(k,ll) = (P(2,i,X(r))-(2.*X(r)/(L**2))*P(3,i,L))*hl(Tps(s),jj) &
-                        & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,jj,Tps(s))*Sb
+        !do r = 1,2*M+2 ! boucles sur les lignes => sur les points (x_r,t_s)
+        !    do s = 1,2*M
+        !        k = (2*M+2)*(s-1)+r
+        !        Sa = 0._rp
+        !        Sb = 0._rp
+        !        Sua = 0._rp
+        !        Sub = 0._rp
+        !        do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
+        !            Sa = Sa + U(4*M**2+ll)*hl(Tps(s),ll)
+        !            Sb = Sb + U(4*M**2+2*M+ll)*hl(Tps(s),ll)
+        !        end do
+        !        ! on calcule pour les u_ij
+        !        do i = 1,2*M ! boucles sur les colonnes => sur les U_j
+        !            do jj = 1,2*M
+        !                n = 2*M*(i-1)+jj
+        !                J(k,ll) = (P(2,i,X(r))-(2.*X(r)/(L**2))*P(3,i,L))*hl(Tps(s),jj) &
+        !                & - hl(X(r),i)*P(1,jj,Tps(s))*Sa - (P(1,i,X(r))-(2./L**2)*P(3,i,L))*P(1,jj,Tps(s))*Sb
 
-                        ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
-                        Sua = Sua + U(n)*hl(X(r),i)*P(1,jj,Tps(s))
-                        write(6,*) 'hl = ', hl(X(r),i), 'P_1 = ', P(1,jj,Tps(s))
-                        Sub = Sub + U(n)*hl(X(r),i)*P(1,jj,Tps(s))*((2./L**2)*P(3,i,L)-P(1,i,X(r)))
-                        write(6,*) 'P_3 = ', P(3,i,L)
-                        write(6,*) ' - P_1 = ', P(1,i,X(r))
-                    end do
+        !                ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
+        !                Sua = Sua + U(n)*hl(X(r),i)*P(1,jj,Tps(s))
+        !                write(6,*) 'hl = ', hl(X(r),i), 'P_1 = ', P(1,jj,Tps(s))
+        !                Sub = Sub + U(n)*hl(X(r),i)*P(1,jj,Tps(s))*((2./L**2)*P(3,i,L)-P(1,i,X(r)))
+        !                write(6,*) 'P_3 = ', P(3,i,L)
+        !                write(6,*) ' - P_1 = ', P(1,i,X(r))
+        !            end do
+        !        end do
+        !        write(6,*) 'Sua = ', Sua
+        !        write(6,*) 'Sub = ', Sub
+        !        ! Puis pour les a_l et b_l
+        !        do ll = 1,2*M
+        !            la = 4*M**2+ll
+        !            lb = 4*M**2+2*M+ll
+        !            J(k,la) = -hl(X(r),la)*(Sua + dxx_phi(X(r)))
+        !            J(k,lb) = hl(X(r),lb)*(Sub - (2./L**2)*H_0(Tps(s)) + (2./L)*(mu_1(Tps(s)) - phi(0._rp)) &
+        !            & + (2./L**2)*int_phi(L)- dx_phi(X(r)))
+        !        end do
+        !        !do ll = 1,4*M**2+4
+        !        !    write(6,*) (J(ll,jj), jj=1,4*M**2+4)
+        !        !end do
+        !        write(6,*)
+        !    end do
+        !end do
+
+        do k = 1,4*M**2+4*M
+            xx = D(1,k) 
+            tt = D(2,k)
+            write(6,*) xx, tt
+            Sa = 0._rp
+            Sb = 0._rp
+            Sua = 0._rp
+            Sub = 0._rp
+            do ll = 1,2*M ! on commence par calculer les sommes en ondelettes de a et b
+                Sa = Sa + U(4*M**2+ll)*hl(tt,ll)
+                Sb = Sb + U(4*M**2+2*M+ll)*hl(tt,ll)
+            end do
+            ! on calcule pour les u_ij
+            do i = 1,2*M ! boucles sur les colonnes => sur les U_j
+                do jj = 1,2*M
+                    n = 2*M*(i-1)+jj
+                    J(k,n) = (P(2,i,xx)-(2.*xx/(L**2))*P(3,i,L))*hl(tt,jj) &
+                    & - hl(xx,i)*P(1,jj,tt)*Sa - (P(1,i,xx)-(2./L**2)*P(3,i,L))*P(1,jj,tt)*Sb
+
+                    ! on profite des boucles pour calculer les sommes avec les U utiles pour les derivees en a et b
+                    Sua = Sua + U(n)*hl(xx,i)*P(1,jj,tt)
+                    Sub = Sub + U(n)*hl(xx,i)*P(1,jj,tt)*((2./L**2)*P(3,i,L)-P(1,i,xx))
                 end do
-                write(6,*) 'Sua = ', Sua
-                write(6,*) 'Sub = ', Sub
-                ! Puis pour les a_l et b_l
-                do ll = 1,2*M
-                    la = 4*M**2+ll
-                    lb = 4*M**2+2*M+ll
-                    J(k,la) = -hl(X(r),la)*(Sua + dxx_phi(X(r)))
-                    J(k,lb) = hl(X(r),lb)*(Sub - (2./L**2)*H_0(Tps(s)) + (2./L)*(mu_1(Tps(s)) - phi(0._rp)) &
-                    & + (2./L**2)*int_phi(L)- dx_phi(X(r)))
-                end do
-                !do ll = 1,4*M**2+4
-                !    write(6,*) (J(ll,jj), jj=1,4*M**2+4)
-                !end do
-                write(6,*)
+            end do
+            ! Puis pour les a_l et b_l
+            do ll = 1,2*M
+                la = 4*M**2+ll
+                lb = 4*M**2+2*M+ll
+                J(k,la) = -hl(xx,la)*(Sua + dxx_phi(xx))
+                J(k,lb) = hl(xx,lb)*(Sub - (2./L**2)*H_0(tt) + (2./L)*(mu_1(tt) - phi(0._rp)) &
+                & + (2./L**2)*int_phi(L)- dx_phi(xx))
             end do
         end do
 
     end subroutine jac
 
-    subroutine newton(U, M, eps, X, Tps, L)
+    subroutine newton(U, M, eps, D, L)
         ! routine pour la methode de Newton
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
         real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
-        real(rp), dimension(2*M+2), intent(in) :: X
-        real(rp), dimension(2*M), intent(in) :: Tps
+        !real(rp), dimension(2*M+2), intent(in) :: X
+        !real(rp), dimension(2*M), intent(in) :: Tps
+        real(rp), dimension(2,4*M**2), intent(in) :: D
         real(rp), dimension(4*M**2+4*M) :: GU
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
         integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
@@ -248,11 +313,11 @@ module ondelettes
 
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
-            call G(GU, U, L, M, X, Tps) ! on calcule G(U)
+            call G(GU, U, L, M, D) ! on calcule G(U)
             write(6,*) (GU(i), i =1,4*M**2+4*M)
             write(6,*) 'OK GU'
             write(6,*)
-            call Jac(J, U, M, X, Tps, L) ! on calcule la jacobienne de G(U)
+            call jac(J, U, M, D, L) ! on calcule la jacobienne de G(U)
             write(6,*) 'OK Jac'
             do i = 1,4*M**2+4*M
                 write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
@@ -305,6 +370,18 @@ module ondelettes
         end do
         norme_L2 = sqrt(norme_L2)
     end function norme_L2
+
+    real(rp) function rmse_a_b(Aapp,Aex,N)
+        integer :: N
+        real(rp), dimension(N) :: Aapp, Aex
+        integer :: j
+
+        rmse_a_b = 0._rp
+        do j = 1,N
+            rmse_a_b = rmse_a_b + (Aapp(j)-Aex(j))**2
+        end do
+        rmse_a_b = sqrt(1._rp/real(N)*rmse_a_b)
+    end function rmse_a_b
 
 
     subroutine reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
