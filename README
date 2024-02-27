@@ -11,11 +11,11 @@ Contenu du dossier:
 - src/numerics.f90: module Fortran qui permet de déclarer les constantes utiles à tout le programme (double précision...)
 - src/ondelettes.f90: module Fortran pour les fonctions et routines utiles à la définition des ondelettes de Haar et de la résolution du problème inverse
 - src/pbdirect.f90: module Fortran pour les fonctions et routines utiles à la résolution du problème direct
+- src/computation.f90: module Fortran qui contient des outils d'algèbre (resolution de systeme lineaire, normes...)
 - src/Makefile: Makefile du projet
 
 Compilation:
 Il faut aller dans le dossier src, puis faire make. Les fichiers binaires seront stockés dans le dossier bin, et le fichier exécutable dans le dossier parent de src. Les variables du problème sont à définir dans init.dat.
 
-Librairies nécessaires:
-Il faut avoir installer au préalable la librairie d'algèbre linéaire LAPACK (pour les inversions de systèmes).
+
 

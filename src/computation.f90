@@ -2,7 +2,7 @@ module computation
     use numerics
     IMPLICIT NONE
 
-    external :: DGESV ! routine pour l'inversion de systeme
+    !external :: DGESV ! routine pour l'inversion de systeme
 
     contains
 

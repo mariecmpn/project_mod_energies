@@ -17,7 +17,7 @@ OBJS = $(ODIR)/main.o $(ODIR)/pbdirect.o $(ODIR)/ondelettes.o $(ODIR)/computatio
 MODS = ondelettes.mod pbdirect.mod initialisation.mod numerics.mod computation.mod
 
 # Librairies used
-LIBS = -llapack
+LIBS = #-llapack
 
 # nom de l'executable
 PROG = mod_energies
