@@ -88,11 +88,8 @@ module ondelettes
         real(rp) :: x, x1, x2, x3
         integer :: k, j, m
         integer :: M1,M2
-        logical :: not_found = .TRUE.
-        integer :: t1, t2, ir
-        real(rp) :: temps
+        logical :: not_found
 
-        call system_clock(count=t1, count_rate=ir)
         j = 0
         M1 = 2**j
         M2 = 2**(j+1)
@@ -120,15 +117,10 @@ module ondelettes
                 M2 = 2**(j+1)
             end if
         end do
-        call system_clock (count=t2, count_rate=ir)
-        temps = REAL (t2 - t1,KIND=REAL64) / REAL(ir,KIND=REAL64)
-        !write(6,*) 'Temps de calcul pour l ondelette integrale = ', temps
-        !write(6,*) 'Avec beta = ', beta
-        !write(6,*) 'i = ', i
     end function P
 
     subroutine G(GU, U, L, M, D)
-        ! subroutine pour calculer 
+        ! subroutine pour calculer la fonction G(U) dont on doit trouve le zero
         real(rp), intent(in) :: L
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
@@ -214,15 +206,15 @@ module ondelettes
                 J(k,lb) = hl(xx,ll)*(Sub-(2./L**2)*H_0(tt)+(2./L)*(mu_1(tt)- phi(0._rp))+(2./L**2)*int_phi(L)-dx_phi(xx))
             end do
         end do
-
     end subroutine jac
 
-    subroutine newton(U, M, eps, D, L)
+    subroutine newton(U, M, eps, D, L, mu)
         ! routine pour la methode de Newton
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
         real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
+        real(rp), intent(in) :: mu
         !real(rp), dimension(2*M+2), intent(in) :: X
         !real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(2,4*M**2), intent(in) :: D
@@ -234,21 +226,22 @@ module ondelettes
         integer :: itermax = 1000, nb_iter
 
         ! initialisation
-        call random_number(U)
+        !call random_number(U)
+        U(:) = 1.5_rp
         conv = 1._rp
         nb_iter = 0
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
             call G(GU, U, L, M, D) ! on calcule G(U)
             write(6,*) (GU(i), i =1,4*M**2+4*M)
-            write(6,*) 'OK GU'
             write(6,*)
             call jac(J, U, M, D, L) ! on calcule la jacobienne de G(U)
-            write(6,*) 'OK Jac'
-            do i = 1,4*M**2+4*M
-                write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
-            end do
+            !do i = 1,4*M**2+4*M
+            !    write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
+            !end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
+            ! on regularise
+            call regularization(GU, J, 4*M**2+4*M, mu)
             ! on inverse le systeme
             call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
             !call DGESV(2,1,J,2,ipiv,GU,2,info)

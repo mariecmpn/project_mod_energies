@@ -50,6 +50,8 @@ program inverse_pb
 
         if (info == 0) write(6,*) 'Resolution du systeme lineaire reussie'
 
+        !write(6,*) (U(r), r=1,4*M**2)
+
         ! on reconstruit la solution U
         call reconst_u_dir(Uapp, Uex, U, D, ind, M)
 
@@ -76,7 +78,7 @@ program inverse_pb
         call vect_discret(D, ind, X, Tps, M)
 
         ! on utilise newton pour trouver le zero de la fonction G(U)
-        call newton(U, M, eps, D, L)
+        call newton(U, M, eps, D, L, mu)
 
         ! on reconstruit les solution a partir des coefficients determines ci-dessus
         call reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)

@@ -4,7 +4,7 @@
 CC = gfortran-11
 
 # Options de compilation
-FFLAGS = -O0 #-ffpe-trap=zero
+FFLAGS = -O0 -ffpe-trap=zero 
 
 # Chemin ou sont stockes les fichiers binaires
 ODIR = ../bin
@@ -37,7 +37,7 @@ $(ODIR)/numerics.o: numerics.f90
 	$(CC) -c $(FFLAGS) numerics.f90 -o $(ODIR)/numerics.o
 $(ODIR)/ondelettes.o: ondelettes.f90 numerics.f90
 	$(CC) -c $(FFLAGS) ondelettes.f90 -o $(ODIR)/ondelettes.o
-$(ODIR)/pbdirect.o: pbdirect.f90 ondelettes.f90 numerics.f90
+$(ODIR)/pbdirect.o: pbdirect.f90 ondelettes.f90 initialisation.f90 numerics.f90
 	$(CC) -c $(FFLAGS) pbdirect.f90 -o $(ODIR)/pbdirect.o
-$(ODIR)/initialisation.o: initialisation.f90 initialisation.f90
+$(ODIR)/initialisation.o: initialisation.f90 numerics.f90
 	$(CC) -c $(FFLAGS) initialisation.f90 -o $(ODIR)/initialisation.o
