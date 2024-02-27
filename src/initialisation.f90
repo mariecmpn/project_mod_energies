@@ -4,7 +4,7 @@ module initialisation
 
     contains
 
-    subroutine read_file(file_name, L, T, M, pb, mu)
+    subroutine read_file(file_name, L, T, M, pb, mu, k)
         ! subroutine qui recupere les informations du fichier file_name
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         real(rp), intent(out) :: L,T ! dimensions du domaine
@@ -12,6 +12,7 @@ module initialisation
         integer :: my_unit ! unite logique du fichier a ouvrir
         character(len=1), intent(out) :: pb
         real(rp), intent(out) :: mu 
+        integer, intent(out) :: k
 
         open(newunit = my_unit, file = file_name, action = 'read', form = 'formatted', status = 'old')
 
@@ -20,6 +21,7 @@ module initialisation
         read(my_unit,*) M
         read(my_unit,*) pb
         read(my_unit,*) mu
+        read(my_unit,*) k
 
         if (pb == 'D') then
             write(6,*) 'Resolution du probleme direct:'
@@ -35,6 +37,10 @@ module initialisation
             write(6,*) 'Nombre de points de maillage: 4M^2+4M = ', 4*M**2+4*M
             write(6,*) 'Dimensions du domaine (0,L)x(0,T): L = ', L, ' T = ', T
         end if
+        write(6,*)
+        write(6,*) 'Resolution de systeme lineaire: '
+        if (k == 0) write(6,*) 'Regularisation sans preconditionnement avec mu = ', mu
+        if (k > 0) write(6,*) 'Regularisation avec mu = ', mu, ' + preconditionnement avec k = ', k
         write(6,*)
 
         close(my_unit)

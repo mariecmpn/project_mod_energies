@@ -1,6 +1,7 @@
 module pbdirect
     use numerics
     use ondelettes
+    use computation
     use initialisation
     implicit none
 
@@ -67,6 +68,7 @@ module pbdirect
     end subroutine syst_direct
 
     subroutine reconst_u_dir(Uapp, Uex, U, D, ind, M)
+        ! routine qui reconstruit en ondelettes de Haar la solution a partir des coef qu'on a calcule precedemment
         integer, intent(in) :: M 
         real(rp), dimension(4*M**2), intent(in) :: U
         real(rp), dimension(4*M**2), intent(out) :: Uapp
@@ -79,7 +81,7 @@ module pbdirect
         Uex(:) = 0._rp
         do l = 1,4*M**2
             do k =1,4*M**2
-                Uapp(l) = Uapp(l) + U(k)*hl(D(1,k),ind(1,k))*hl(D(2,k),ind(2,k))
+                Uapp(l) = Uapp(l) + U(k)*hl(D(1,l),ind(1,k))*hl(D(2,l),ind(2,k))
             end do
             Uex(l) = u_ex(D(1,l),D(2,l))
         end do
@@ -101,15 +103,5 @@ module pbdirect
 
         close(my_unit)
     end subroutine save_u_dir
-
-    subroutine reconst_fluxmoments(Q0,Q1,H0,H1,M,U,pb,D)
-        real(rp), dimension(:), intent(out) :: Q0,Q1,H0,H1
-        integer, intent(in) :: M
-        character(len=1), intent(in) :: pb
-        real(rp), dimension(:), intent(in) :: U
-        real(rp), dimension(:,:), intent(in) :: D
-        integer :: i
-
-    end subroutine reconst_fluxmoments
 
 end module pbdirect

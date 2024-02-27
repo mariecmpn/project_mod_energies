@@ -1,9 +1,8 @@
 module ondelettes
     use numerics
     use initialisation
+    use computation
     implicit none
-
-    external :: DGESV ! routine pour l'inversion de systeme
 
     contains
 
@@ -124,12 +123,9 @@ module ondelettes
         real(rp), intent(in) :: L
         integer, intent(in) :: M
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
-        !real(rp), dimension(2*M+2), intent(in) :: X
-        !real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(4*M**2+4*M), intent(out) :: GU
         real(rp), dimension(2,4*M**2), intent(in) :: D
-        !integer, dimension(2,4*M**2), intent(in) :: ind
-        integer :: i,j,ll,k,r,s,n
+        integer :: i,j,ll,k,n
         real(rp) :: Sa, Sb, P3iL, xx, tt
 
         ! initialisation des termes a zero
@@ -166,12 +162,9 @@ module ondelettes
         real(rp), intent(in) :: L
         real(rp), dimension(4*M**2+4*M), intent(in) :: U
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M), intent(out) :: J
-        !real(rp), dimension(2*M+2), intent(in) :: X
-        !real(rp), dimension(2*M), intent(in) :: Tps
         real(rp), dimension(2,4*M**2), intent(in) :: D
-        !integer, dimension(2,4*M**2), intent(in) :: ind
         real(rp) :: Sa,Sb,Sua,Sub,xx,tt
-        integer :: ll,n,r,s,i,jj,k,la,lb
+        integer :: ll,n,i,jj,k,la,lb
 
         ! initialisation a zero
         J(:,:) = 0._rp
@@ -208,9 +201,13 @@ module ondelettes
         end do
     end subroutine jac
 
-    subroutine newton(U, M, eps, D, L, mu)
+    !--------------------------------
+    ! Methode de Newton
+    !--------------------------------
+
+    subroutine newton(U, M, eps, D, L, mu, k)
         ! routine pour la methode de Newton
-        integer, intent(in) :: M 
+        integer, intent(in) :: M, k 
         real(rp), intent(in) :: L
         real(rp), intent(in) :: eps ! tolerance epsilon pour la convergence
         real(rp), dimension(4*M**2+4*M), intent(out) :: U ! en sortie: U_k la racine de G(U) = 0
@@ -221,7 +218,7 @@ module ondelettes
         real(rp), dimension(4*M**2+4*M) :: GU
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
         integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
-        integer :: info, i, jj
+        integer :: info, i
         real(rp) :: conv
         integer :: itermax = 1000, nb_iter
 
@@ -233,43 +230,38 @@ module ondelettes
         ! iterations
         do while ((conv > eps) .AND. (nb_iter < itermax))
             call G(GU, U, L, M, D) ! on calcule G(U)
-            write(6,*) (GU(i), i =1,4*M**2+4*M)
+            !write(6,*) (GU(i), i =1,4*M**2+4*M)
             write(6,*)
             call jac(J, U, M, D, L) ! on calcule la jacobienne de G(U)
             !do i = 1,4*M**2+4*M
             !    write(6,*) (J(i,jj), jj = 1,4*M**2+4*M)
             !end do
             GU(:) = -GU(:) ! on prend l'oppose pour G(U)
-            ! on regularise
-            call regularization(GU, J, 4*M**2+4*M, mu)
-            ! on inverse le systeme
-            call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
-            !call DGESV(2,1,J,2,ipiv,GU,2,info)
-            if (info /= 0) then
-                write(6,*) 'Probleme pour l inversion de systeme'
-                if (info < 0) write(6,*) 'le coefficient d indice ', info, ' a une valeur illegale'
-                if (info > 0) write(6,*) 'le coefficient U(',info,',',info,') de la factorisation est egal a 0'
-                stop
+            if (k == 0) then
+                ! on regularise
+                call regularization(GU, J, 4*M**2+4*M, mu)
+                ! on inverse le systeme
+                !call DGESV(4*M**2+4*M,1,J,4*M**2+4*M,ipiv,GU,4*M**2+4*M,info) ! le resultat est enregistre dans GU
+                call gradient_conjugue(J,GU,1.D-08,4*M**2+4*M)
+            else
+                call preconditionning(J,GU,4*M**2+4*M,0.4_rp,0.4_rp,k,mu)
             end if
+            !if (info /= 0) then
+            !    write(6,*) 'Probleme pour l inversion de systeme'
+            !    if (info < 0) write(6,*) 'le coefficient d indice ', info, ' a une valeur illegale'
+            !    if (info > 0) write(6,*) 'le coefficient U(',info,',',info,') de la factorisation est egal a 0'
+            !    stop
+            !end if
             U(:) = GU(:) + U(:) ! on calcule U_k+1
             conv = norme_L2(GU,4*M**2+4*M)/norme_L2(U,4*M**2+4*M)
             nb_iter = nb_iter+1
         end do
         write(6,*) 'Nb d iterations pour Newton : ', nb_iter
+        write(6,*)
     end subroutine newton
 
     !-----------------------------------------------
 
-    real(rp) function norme_L2(U, Ns)
-        integer :: Ns
-        real(rp), dimension(Ns) :: U
-        integer :: i
-        norme_L2 = 0._rp
-        do i = 1,Ns
-            norme_L2 = norme_L2+U(i)**2
-        end do
-        norme_L2 = sqrt(norme_L2)
-    end function norme_L2
 
     real(rp) function rmse_a_b(Aapp,Aex,N)
         integer :: N
@@ -283,33 +275,6 @@ module ondelettes
         rmse_a_b = sqrt(1._rp/real(N)*rmse_a_b)
     end function rmse_a_b
 
-    subroutine regularization(U, A, m, mu)
-        ! routine pour la regularization du systeme lineaire a inverser
-        integer, intent(in) :: m 
-        real(rp), intent(in) :: mu
-        real(rp), dimension(m), intent(inout) :: U
-        real(rp), dimension(m,m), intent(inout) :: A
-        real(rp), dimension(m,m) :: tA
-
-        ! calcul de la transposee de A
-        tA = transpose(A)
-        ! matrice A
-        A = matmul(tA,A)+mu*mat_ID(m)
-        ! second membre
-        U = matmul(tA,U)
-    end subroutine regularization
-
-    function mat_ID(M)
-        ! fonction qui renvoie la matrice identite de taille M
-        real(rp), dimension(M,M) :: mat_ID
-        integer :: M
-        integer :: i
-
-        mat_ID(:,:) = 0._rp
-        do i = 1,M
-            mat_ID(i,i) = 1._rp
-        end do
-    end function mat_ID
 
     subroutine reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
         ! routine pour la reconstruction des solutions 

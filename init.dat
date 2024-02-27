@@ -1,5 +1,6 @@
 1.0 :: L longueur de l'intervalle en x
 1.0 :: T longueur de l'intervalle en t
-20 :: M nombre de termes dans les sommes = 2*M
+10 :: M nombre de termes dans les sommes = 2*M
 D :: D pour resolution du probleme direct, I pour resolution du probleme indirect (par defaut probleme indirect)
-1.0D-02 :: si probleme direct, coef mu de regularization pour la resolution du systeme lineaire
+1.0D-02 :: coef mu de regularization pour la resolution du systeme lineaire
+2 :: k = nombre d'iterations pour le preconditionnement (0 si pas de preconditionnement)
