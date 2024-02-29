@@ -217,8 +217,8 @@ module ondelettes
         real(rp), dimension(2,4*M**2), intent(in) :: D
         real(rp), dimension(4*M**2+4*M) :: GU
         real(rp), dimension(4*M**2+4*M,4*M**2+4*M) :: J
-        integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
-        integer :: info, i
+        !integer, dimension(4*M**2+4*M) :: ipiv ! pour routine lapack
+        !integer :: info, i
         real(rp) :: conv
         integer :: itermax = 1000, nb_iter
 
@@ -260,45 +260,35 @@ module ondelettes
         write(6,*)
     end subroutine newton
 
-    !-----------------------------------------------
-
-
-    real(rp) function rmse_a_b(Aapp,Aex,N)
-        integer :: N
-        real(rp), dimension(N) :: Aapp, Aex
-        integer :: j
-
-        rmse_a_b = 0._rp
-        do j = 1,N
-            rmse_a_b = rmse_a_b + (Aapp(j)-Aex(j))**2
-        end do
-        rmse_a_b = sqrt(1._rp/real(N)*rmse_a_b)
-    end function rmse_a_b
-
-
-    subroutine reconstruction_sol(U, X, Tps, M, Uapp, Aapp, Bapp)
+    subroutine reconstruction_sol(U, D, Tps, M, Uapp, Aapp, Bapp, L)
         ! routine pour la reconstruction des solutions 
         integer, intent(in) :: M ! entier M pour les sommes en ondelettes
+        real(rp), intent(in) :: L
         real(rp), dimension(4*M**2+4*M), intent(in) :: U ! vecteur des coef u_ij, a_i et b_i qu'on a determine avant
-        real(rp), dimension(2*M+2), intent(in) :: X ! vecteur du maillage en espace
+        real(rp), dimension(2,4*M**2+4*M), intent(in) :: D ! tableau du maillage
         real(rp), dimension(2*M), intent(in) :: Tps ! vecteur du maillage en temps
         real(rp), dimension(4*M**2+4*M), intent(out) :: Uapp ! vecteur de la solution approchee u_app de la fonction u
         real(rp), dimension(2*M), intent(out) :: Aapp, Bapp ! vecteur des solutions approchees a_app et b_app des fonctions a et b
         integer :: r,s,k,i,j ! entiers pour les boucles
+        real(rp) :: xx, tt
 
         Uapp(:) = 0._rp
         Aapp(:) = 0._rp
         Bapp(:) = 0._rp
-        do s = 1,2*M ! boucle sur le maillage en temps
+        do s = 1,4*M**2+4*M ! boucle sur le maillage
             ! Pour la solution approchee de U
-            do r = 1,2*M+2 ! boucle sur le maillage en espace
-                do i = 1,2*M ! boucles sur les indices de u_ij
-                    do j = 1,2*M
-                        k = (2*M+2)*(j-1)+i
-                        Uapp(k) = Uapp(k) + U(k)*hl(X(r),i)*hl(Tps(s),j) ! decomposition en ondelettes de Haar de u
-                    end do
+            xx = D(1,s)
+            tt = D(2,s)
+            Uapp(s) = (2./L**2)*H_0(D(2,s))+mu_1(D(2,s))*(1.-(D(1,s)*2./L))-(2./L**2)*int_phi(D(2,s))&
+            +((D(1,s)*2./L)-1.)*phi(0._rp) + phi(D(1,s))
+            do i = 1,2*M ! boucles sur les indices de u_ij
+                do j = 1,2*M
+                    k = (2*M)*(j-1)+i
+                    Uapp(s) = Uapp(s) + U(k)*P(1,j,D(2,s))*(P(2,i,D(1,s))-D(1,s)*(2./L**2)*P(3,i,L))  
                 end do
             end do
+        end do
+        do s = 1,2*M
             ! Pour la solution approchee de A et de B
             do i = 1,2*M ! boucle sur l'indice de a_i et b_i
                 Aapp(i) = Aapp(i) + U(4*M**2+i)*hl(Tps(s), i)

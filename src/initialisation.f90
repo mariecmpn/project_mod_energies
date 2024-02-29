@@ -47,6 +47,7 @@ module initialisation
     end subroutine read_file
 
     subroutine discretisation(X, Tps, M, L, T)
+        ! routine pour la discretisation du domaine en (2M+2)x2M points
         real(rp), intent(in) :: L, T
         integer, intent(in) :: M
         real(rp), dimension(2*M+2), intent(out) :: X
@@ -183,16 +184,19 @@ module initialisation
     !--------------------------------
 
     real(rp) function u_ex(x,t)
+        ! fonction solution exacte de u
         real(rp) :: x,t
         u_ex = (exp(-x) + x**2)*exp(t)
     end function u_ex
 
     real(rp) function a_ex(t)
+        ! fonction solution exacte de a
         real(rp) :: t
         a_ex = 1+t
     end function a_ex
 
     real(rp) function b_ex(t)
+        ! fonction solution exacte de b
         real(rp) :: t
         b_ex = 1+2*t
     end function b_ex

@@ -13,6 +13,11 @@ Contenu du dossier:
 - src/pbdirect.f90: module Fortran pour les fonctions et routines utiles à la résolution du problème direct
 - src/computation.f90: module Fortran qui contient des outils d'algèbre (resolution de systeme lineaire, normes...)
 - src/Makefile: Makefile du projet
+- init.dat: fichier où l'on définit les variables du problème (M, L, T...)
+- plot_pbdir.gnu: exemple de script Gnuplot pour les graphiques en lien avec le problème direct
+- plot.gnu: exemple de script Gnuplot pour la solution u du problème inverse
+- plot_a.gnu: exemple de script Gnuplot pour la solution a du problème inverse
+- plot_b.gnu: exemple de script Gnuplot pour la solution b du problème inverse
 
 Compilation:
 Il faut aller dans le dossier src, puis faire make. Les fichiers binaires seront stockés dans le dossier bin, et le fichier exécutable dans le dossier parent de src. Les variables du problème sont à définir dans init.dat.

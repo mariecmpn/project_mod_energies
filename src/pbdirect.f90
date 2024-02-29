@@ -8,6 +8,7 @@ module pbdirect
     contains
 
     subroutine discretisation_dir(X, Tps, M, L, T)
+        ! routine pour la discretisation du domaine en 2Mx2M points
         real(rp), intent(in) :: L, T
         integer, intent(in) :: M
         real(rp), dimension(2*M), intent(out) :: X
@@ -41,6 +42,7 @@ module pbdirect
     end subroutine vect_discretisation
 
     subroutine syst_direct(A, U, M, D, ind, L)
+        ! routine pour le remplissage de la matrice A et du second membre U du systeme a inverser
         integer, intent(in) :: M 
         real(rp), intent(in) :: L
         real(rp), dimension(4*M**2), intent(out) :: U
@@ -67,27 +69,33 @@ module pbdirect
         end do
     end subroutine syst_direct
 
-    subroutine reconst_u_dir(Uapp, Uex, U, D, ind, M)
+    subroutine reconst_u_dir(Uapp, Uex, U, D, ind, M, L)
         ! routine qui reconstruit en ondelettes de Haar la solution a partir des coef qu'on a calcule precedemment
         integer, intent(in) :: M 
+        real(rp) ,intent(in) :: L
         real(rp), dimension(4*M**2), intent(in) :: U
         real(rp), dimension(4*M**2), intent(out) :: Uapp
         real(rp), dimension(4*M**2), intent(out) :: Uex
         real(rp), dimension(2,4*M**2), intent(in) :: D
         integer, dimension(2,4*M**2), intent(in) :: ind
-        integer :: l,k
-
+        integer :: ll,k
+        !initialisation
         Uapp(:) = 0._rp
         Uex(:) = 0._rp
-        do l = 1,4*M**2
+        ! on reconstruit U
+        do ll = 1,4*M**2
+            Uapp(ll) = (2./L**2)*H_0(D(2,ll))+mu_1(D(2,ll))*(1.-(D(1,ll)*2./L))-(2./L**2)*int_phi(D(2,ll))&
+            +((D(1,ll)*2./L)-1.)*phi(0._rp) + phi(D(1,ll))
             do k =1,4*M**2
-                Uapp(l) = Uapp(l) + U(k)*hl(D(1,l),ind(1,k))*hl(D(2,l),ind(2,k))
+                Uapp(ll) = Uapp(ll) + U(k)*P(1,ind(2,k),D(2,ll))*(P(2,ind(1,k),D(1,ll))-D(1,ll)*(2./L**2)*P(3,ind(1,k),L))
             end do
-            Uex(l) = u_ex(D(1,l),D(2,l))
+            ! on profite de la boucle pour calculer la solution exacte
+            Uex(ll) = u_ex(D(1,ll),D(2,ll))
         end do
     end subroutine reconst_u_dir
 
     subroutine save_u_dir(file_name, Uapp, D, M)
+        ! routine pour enregister dans un fichier file_name les resultats
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
         integer, intent(in) :: M
         real(rp), dimension(4*M**2) :: Uapp

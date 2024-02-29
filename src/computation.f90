@@ -36,6 +36,7 @@ module computation
     end function prod_scal
 
     subroutine gradient_conjugue(A, L, conv, n)
+        ! routine pour le gradient conjugue
         integer, intent(in)  :: n ! Dimension des vecteurs et matrices
         real(rp), dimension(n, n), intent(in) :: A ! Matrice du système lineaire
         real(rp), dimension(n), intent(inout) :: L ! en entree: vecteur L second membre du systeme. En sortie: solution du systeme U
@@ -69,6 +70,7 @@ module computation
     end subroutine gradient_conjugue
 
     real(rp) function norme_L2(U, Ns)
+        ! fonction qui renvoie la norme L^2 d'un vecteur
         integer :: Ns
         real(rp), dimension(Ns) :: U
         integer :: i
@@ -97,8 +99,9 @@ module computation
     !--------------------------------
 
     subroutine preconditionning(A,U,M,gma,dta,k,mu)
+        ! routine pour le preconditionnement du systeme lineaire a inverser
         integer, intent(in) :: k, M
-        real(rp), dimension(M,M), intent(in) :: A
+        real(rp), dimension(M,M), intent(in) :: A ! matrice A du systeme
         real(rp), dimension(M), intent(inout) :: U ! en entree: second membre du systeme a inverser; en sortie: solution du systeme
         real(rp), intent(in) :: gma, dta, mu
         real(rp), dimension(M,M) :: P1, A1, Q1, A2, A3, P
@@ -130,16 +133,17 @@ module computation
     end subroutine preconditionning
 
     function P_gamma(A, gma, M)
+        ! operateur P_gamma pour le preconditionnement (a droite)
         real(rp), dimension(M,M) :: P_gamma
         real(rp), dimension(M,M) :: A
         integer :: M
         real(rp) :: gma
         integer :: i,k
         real(rp) :: Snum, Sden
-
+        ! initialisation
         P_gamma(:,:) = 0._rp
         Snum = 0._rp
-
+        ! calcul des elements diagonaux
         do i = 1,M
             Snum = Snum + A(i,1)**2
         end do
@@ -152,16 +156,17 @@ module computation
     end function P_gamma
 
     function Q_delta(A, dta, M)
+        ! operateur Q_delta pour le preconditionnement (a gauche)
         real(rp), dimension(M,M) :: Q_delta
         real(rp), dimension(M,M) :: A
         integer :: M
         real(rp) :: dta
         integer :: i,k
         real(rp) :: Snum, Sden
-
+        ! initialisation
         Q_delta(:,:) = 0._rp
         Snum = 0._rp
-
+        ! calcul des elements diagonaux
         do i = 1,M
             Snum = Snum + A(1,i)**2
         end do
