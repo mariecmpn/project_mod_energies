@@ -18,6 +18,8 @@ Contenu du dossier:
 - plot.gnu: exemple de script Gnuplot pour la solution u du problème inverse
 - plot_a.gnu: exemple de script Gnuplot pour la solution a du problème inverse
 - plot_b.gnu: exemple de script Gnuplot pour la solution b du problème inverse
+- Rapport_FOURNY_COMPAIN.pdf: Rapport du projet au format PDF
+- Rapport_FOURNY_COMPAIN.tex: script LaTeX du rapport du projet
 
 Compilation:
 Il faut aller dans le dossier src, puis faire make. Les fichiers binaires seront stockés dans le dossier bin, et le fichier exécutable dans le dossier parent de src. Les variables du problème sont à définir dans init.dat.

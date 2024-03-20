@@ -24,7 +24,7 @@ program inverse_pb
     integer :: k ! nombre de fois que l'on preconditionne le systeme
     integer, dimension(:), allocatable :: ipiv ! pour routine lapack
     character(len=1) :: pb ! probleme direct ou indirect
-    integer :: ir, t1, t2
+    integer :: ir, t1, t2 ! entiers pour le calcul du temps ecoules
 
     ! lecture des donnees
     call read_file('init.dat', L, T, M, pb, mu, k)
